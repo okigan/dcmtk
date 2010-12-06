@@ -892,3 +892,6 @@ typedef unsigned long ulong;
 #define STDIO_NAMESPACE ::
 
 #endif /* !OSCONFIG_H*/
+
+
+#cmakedefine WITH_SQL_DATABASE

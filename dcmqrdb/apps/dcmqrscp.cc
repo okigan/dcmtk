@@ -82,7 +82,7 @@ END_EXTERN_C
 #include "dcmtk/dcmdata/dcostrmz.h"    /* for dcmZlibCompressionLevel */
 
 #ifdef WITH_SQL_DATABASE
-#include "dcmtk/dcmqrdbx/dcmqrdbq.h"
+#include "dcmtk/dcmqrdb/dcmqrdbq.h"
 #else
 #include "dcmtk/dcmqrdb/dcmqrdbi.h"
 #endif
@@ -713,7 +713,7 @@ main(int argc, char *argv[])
 
 #ifdef WITH_SQL_DATABASE
     // use SQL database
-    DcmQueryRetrieveSQLDatabaseHandleFactory factory;
+    DcmQueryRetrieveSQLDatabaseHandleFactory factory(&config);
 #else
     // use linear index database (index.dat)
     DcmQueryRetrieveIndexDatabaseHandleFactory factory(&config);

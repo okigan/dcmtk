@@ -12,7 +12,7 @@ ENDIF(CMAKE_BACKWARDS_COMPATIBILITY GREATER 2.8.3)
 #-----------------------------------------------------------------------------
 
 # Modules to be built (default: build all public modules)
-SET(DCMTK_MODULES config ofstd oflog dcmdata dcmimgle dcmjpeg dcmimage dcmtls dcmnet dcmwlm dcmqrdb dcmsr dcmpstat dcmsign dcmjpls doxygen)
+SET(DCMTK_MODULES config ofstd oflog dcmdata dcmimgle dcmjpeg dcmimage dcmtls dcmnet dcmwlm dblib dcmqrdb dcmsr dcmpstat dcmsign dcmjpls doxygen)
 # Add non-public modules
 #SET(DCMTK_MODULES ${DCMTK_MODULES} dcmdbsup dcmwlmxl dcmpps dcmppswm dcmjp2k dcmloco dcmqrdbx dcmcheck dcmprint dcmprscp dcmavi dcmmisc dcmppscu dcmstcom dcmrt dcmwave dcmeval)
 
@@ -38,6 +38,8 @@ OPTION(DCMTK_WITH_PRIVATE_TAGS "Configure DCMTK with support for DICOM private t
 OPTION(DCMTK_WITH_THREADS "Configure DCMTK with support for multi-threading" ON)
 OPTION(DCMTK_WITH_DOXYGEN "Build API documentation with doxygen" ON)
 
+OPTION(WITH_SQL_DATABASE "Configure to use a SQL database" OFF)
+
 #SET(CXX_TEST_PATH ${EXECUTABLE_OUTPUT_PATH})
 
 #-----------------------------------------------------------------------------
@@ -60,6 +62,7 @@ SET(DCMTK_INCLUDE_DIR
   ${DCMTK_SOURCE_DIR}/dcmnet/include
   ${DCMTK_SOURCE_DIR}/dcmpstat/include
   ${DCMTK_SOURCE_DIR}/dcmqrdb/include
+  ${DCMTK_SOURCE_DIR}/dcmqrdbx/include
   ${DCMTK_SOURCE_DIR}/dcmsign/include
   ${DCMTK_SOURCE_DIR}/dcmsr/include
   ${DCMTK_SOURCE_DIR}/dcmtls/include

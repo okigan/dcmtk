@@ -11,12 +11,16 @@ FOREACH(PROGRAM dcmqrscp dcmqridx dcmqrti)
   INSTALL_TARGETS(${INSTALL_BINDIR} ${PROGRAM})
 ENDFOREACH(PROGRAM)
 
+if (WITH_SQL_DATABASE)
+	FOREACH(PROGRAM dcmqrscp dcmqridx dcmqrti)
+		TARGET_LINK_LIBRARIES(${PROGRAM} dblib)
+	ENDFOREACH(PROGRAM)
+endif (WITH_SQL_DATABASE)
+
 # make sure executables are linked to the corresponding libraries
 FOREACH(PROGRAM dcmqrscp dcmqridx dcmqrti)
+  TARGET_LINK_LIBRARIES(${PROGRAM} dblib)
   TARGET_LINK_LIBRARIES(${PROGRAM} dcmqrdb dcmnet dcmdata oflog ofstd ${ZLIB_LIBS} ${WIN32_STD_LIBRARIES} ${THREAD_LIBS})
 ENDFOREACH(PROGRAM)
 
 
-if (WITH_SQL_DATABASE)
-  TARGET_LINK_LIBRARIES(dcmqrscp dblib)
-endif (WITH_SQL_DATABASE)

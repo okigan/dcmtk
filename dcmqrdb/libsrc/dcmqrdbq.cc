@@ -56,11 +56,9 @@ END_EXTERN_C
 
 #ifdef WITH_SQL_DATABASE
 //TODO: move these of this file
-#include <windows.h>
-#include <tchar.h>
 
 #include <atlbase.h>
-# include "dblib/dboledb.h"
+# include "dblib/dblib.h"
 #endif
 
 
@@ -2978,11 +2976,11 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::storeRequest (
     }
 
     //LPCSTR pstrConnection = _T("Provider=SQLOLEDB;Data Source=(local);Integrated Security=SSPI;Initial Catalog=dcmqrdb");
-    LPCSTR pstrConnection = _T("Provider=SQLOLEDB;Data Source=167.81.183.231\\SQLEXPRESS;Persist Security Info=True;User ID=t;Password=t");
+    //LPCSTR pstrConnection = _T("Provider=SQLOLEDB;Data Source=167.81.183.231\\SQLEXPRESS;Persist Security Info=True;User ID=t;Password=t");
 
-    CAutoPtr<IDbSystem> piDbSystem(new COledbSystem());
+    //CAutoPtr<IDbSystem> piDbSystem(new COledbSystem());
 
-    piDbSystem->Initialize();
+    //piDbSystem->Initialize();
     {
       //CAutoPtr<IDbDatabase> pDb(piDbSystem->CreateDatabase());
       BOOL bRes = FALSE;
@@ -3012,10 +3010,10 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::storeRequest (
       bRes = pCmd->SetParam(0, CA2T((idxRec).StudyInstanceUID));
       bRes = pCmd->SetParam(1, CA2T((idxRec).SeriesInstanceUID));
       bRes = pCmd->SetParam(2, CA2T((idxRec).SOPInstanceUID));
-      CAutoPtr<IDbRecordset> pRec(piDbSystem->CreateRecordset(piDbDatabase_));
+      CAutoPtr<IDbRecordset> pRec(piDbSystem_->CreateRecordset(piDbDatabase_));
       bRes = pCmd->Execute(pRec);
     }
-    piDbSystem->Terminate();
+    //piDbSystem->Terminate();
 
     return EC_Normal;
 
@@ -3244,10 +3242,11 @@ DcmQueryRetrieveSQLDatabaseHandle::DcmQueryRetrieveSQLDatabaseHandle(
 {
 
     handle_ = new DB_Private_Handle;
-    piDbSystem_ = new COledbSystem();
+    
 
-    piDbSystem_->Initialize();
-
+    BOOL bRet = FALSE;
+    bRet = OpenDbSystem(0, DB_SYSTEM_OLEDB, &piDbSystem_);
+    
     CAutoPtr<IDbDatabase> pDb(piDbSystem_->CreateDatabase());
     BOOL bRes = pDb->Open(NULL, CA2T(connectionString), _T(""), _T(""), DB_OPEN_READ_ONLY);
     if( !bRes ) {

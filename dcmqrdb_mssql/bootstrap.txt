@@ -1,2 +1,0 @@
-01-dcmqrdb-database.sql
-02-dcmqrdb-tables.sql

@@ -5,4 +5,11 @@ SET dbinstance=%hostname%\%instance%
 ECHO instance: %dbinstance%
 SET currdir=%CD%
 
-sqlcmd -E -S %dbinstance% -i bootstrap.sql -o bootstrap.sql.log
+SET sqlfile=bootstrap.sql
+sqlcmd -E -S %dbinstance% -i %sqlfile% -o %sqlfile%.log
+
+if errorlevel 1 (
+	ECHO FAILed on %sqlfile%
+) else (
+	ECHO Processed %sqlfile%
+)

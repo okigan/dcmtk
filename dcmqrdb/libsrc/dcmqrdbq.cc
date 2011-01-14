@@ -2802,43 +2802,12 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::removeDuplicateImage(
 }
 #endif
 
-/*************************
-**  Add data from imageFileName to database
- */
-
-OFCondition DcmQueryRetrieveSQLDatabaseHandle::storeRequest (
-    const char  *SOPClassUID,
-    const char  * /*SOPInstanceUID*/,
-    const char  *imageFileName,
-    DcmQueryRetrieveDatabaseStatus *status,
-    OFBool      isNew)
+OFCondition PopulateIdxRecFromImageFile(
+                                 const char *imageFileName
+                                 , IdxRecord &idxRec
+                                 , DcmFileFormat& dcmff
+                                 , DcmQueryRetrieveDatabaseStatus *status)
 {
-  // return EC_MemoryExhausted;
-
-    IdxRecord        idxRec ;
-    StudyDescRecord  *pStudyDesc ;
-    int              i ;
-    struct stat      stat_buf ;
-
-    /**** Initialize an IdxRecord
-    ***/
-
-
-
-    bzero((char*)&idxRec, sizeof(idxRec));
-
-    DB_IdxInitRecord (&idxRec, 0) ;
-
-    strncpy(idxRec.filename, imageFileName, DBC_MAXSTRING);
-#ifdef DEBUG
-    DCMQRDB_DEBUG("DB_storeRequest () : storage request of file : " << idxRec.filename);
-#endif
-    strncpy (idxRec.SOPClassUID, SOPClassUID, UI_MAX_LENGTH);
-
-    /**** Get IdxRec values from ImageFile
-    ***/
-
-    DcmFileFormat dcmff;
     if (dcmff.loadFile(imageFileName).bad())
     {
       char buf[256];
@@ -2850,7 +2819,7 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::storeRequest (
 
     DcmDataset *dset = dcmff.getDataset();
 
-    for (i = 0 ; i < NBPARAMETERS ; i++ ) {
+    for (int i = 0 ; i < NBPARAMETERS ; i++ ) {
         OFCondition ec = EC_Normal;
         DB_SmallDcmElmt *se = idxRec.param + i;
 
@@ -2868,63 +2837,63 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::storeRequest (
         }
     }
 
-    /* InstanceStatus */
-    idxRec.hstat = (isNew) ? DVIF_objectIsNew : DVIF_objectIsNotNew;
+    return EC_Normal;
+}
 
-    /* InstanceDescription */
-    OFBool useDescrTag = OFTrue;
-    DcmTagKey descrTag = DCM_ImageComments;
-    if (SOPClassUID != NULL)
+void ExtractInstanceDescription(char const*SOPClassUID, IdxRecord &idxRec, DcmDataset *dset, bool &useDescrTag, DcmTagKey &descrTag)
+{
+  if (SOPClassUID != NULL)
+  {
+    /* fill in value depending on SOP class UID (content might be improved) */
+    if (strcmp(SOPClassUID, UID_GrayscaleSoftcopyPresentationStateStorage) == 0)
     {
-        /* fill in value depending on SOP class UID (content might be improved) */
-        if (strcmp(SOPClassUID, UID_GrayscaleSoftcopyPresentationStateStorage) == 0)
-        {
-            descrTag = DCM_ContentDescription;
-        } else if (strcmp(SOPClassUID, UID_RETIRED_HardcopyGrayscaleImageStorage) == 0)
-        {
-            strcpy(idxRec.InstanceDescription, "Hardcopy Grayscale Image");
-            useDescrTag = OFFalse;
-        } else if ((strcmp(SOPClassUID, UID_BasicTextSRStorage) == 0) ||
-                   (strcmp(SOPClassUID, UID_EnhancedSRStorage) == 0) ||
-                   (strcmp(SOPClassUID, UID_ComprehensiveSRStorage) == 0) ||
-                   (strcmp(SOPClassUID, UID_ProcedureLogStorage) == 0) ||
-                   (strcmp(SOPClassUID, UID_MammographyCADSRStorage) == 0) ||
-                   (strcmp(SOPClassUID, UID_KeyObjectSelectionDocumentStorage) == 0) ||
-                   (strcmp(SOPClassUID, UID_ChestCADSRStorage) == 0) ||
-                   (strcmp(SOPClassUID, UID_ColonCADSRStorage) == 0) ||
-                   (strcmp(SOPClassUID, UID_XRayRadiationDoseSRStorage) == 0) ||
-                   (strcmp(SOPClassUID, UID_SpectaclePrescriptionReportStorage) == 0) ||
-                   (strcmp(SOPClassUID, UID_MacularGridThicknessAndVolumeReportStorage) == 0) ||
-                   (strcmp(SOPClassUID, UID_ImplantationPlanSRDocumentStorage) == 0))
-        {
-            OFString string;
-            OFString description = "unknown SR";
-            const char *name = dcmFindNameOfUID(SOPClassUID);
-            if (name != NULL)
-                description = name;
-            if (dset->findAndGetOFString(DCM_VerificationFlag, string) == EC_Normal)
-            {
-                description += ", ";
-                description += string;
-            }
-            if (dset->findAndGetOFString(DCM_CompletionFlag, string) == EC_Normal)
-            {
-                description += ", ";
-                description += string;
-            }
-            if (dset->findAndGetOFString(DCM_CompletionFlagDescription, string) == EC_Normal)
-            {
-                description += ", ";
-                description += string;
-            }
-            strncpy(idxRec.InstanceDescription, description.c_str(), DESCRIPTION_MAX_LENGTH);
-            useDescrTag = OFFalse;
-        } else if (strcmp(SOPClassUID, UID_RETIRED_StoredPrintStorage) == 0)
-        {
-            strcpy(idxRec.InstanceDescription, "Stored Print");
-            useDescrTag = OFFalse;
-        }
+      descrTag = DCM_ContentDescription;
+    } else if (strcmp(SOPClassUID, UID_RETIRED_HardcopyGrayscaleImageStorage) == 0)
+    {
+      strcpy(idxRec.InstanceDescription, "Hardcopy Grayscale Image");
+      useDescrTag = OFFalse;
+    } else if ((strcmp(SOPClassUID, UID_BasicTextSRStorage) == 0) ||
+      (strcmp(SOPClassUID, UID_EnhancedSRStorage) == 0) ||
+      (strcmp(SOPClassUID, UID_ComprehensiveSRStorage) == 0) ||
+      (strcmp(SOPClassUID, UID_ProcedureLogStorage) == 0) ||
+      (strcmp(SOPClassUID, UID_MammographyCADSRStorage) == 0) ||
+      (strcmp(SOPClassUID, UID_KeyObjectSelectionDocumentStorage) == 0) ||
+      (strcmp(SOPClassUID, UID_ChestCADSRStorage) == 0) ||
+      (strcmp(SOPClassUID, UID_ColonCADSRStorage) == 0) ||
+      (strcmp(SOPClassUID, UID_XRayRadiationDoseSRStorage) == 0) ||
+      (strcmp(SOPClassUID, UID_SpectaclePrescriptionReportStorage) == 0) ||
+      (strcmp(SOPClassUID, UID_MacularGridThicknessAndVolumeReportStorage) == 0) ||
+      (strcmp(SOPClassUID, UID_ImplantationPlanSRDocumentStorage) == 0))
+    {
+      OFString string;
+      OFString description = "unknown SR";
+      const char *name = dcmFindNameOfUID(SOPClassUID);
+      if (name != NULL)
+        description = name;
+      if (dset->findAndGetOFString(DCM_VerificationFlag, string) == EC_Normal)
+      {
+        description += ", ";
+        description += string;
+      }
+      if (dset->findAndGetOFString(DCM_CompletionFlag, string) == EC_Normal)
+      {
+        description += ", ";
+        description += string;
+      }
+      if (dset->findAndGetOFString(DCM_CompletionFlagDescription, string) == EC_Normal)
+      {
+        description += ", ";
+        description += string;
+      }
+      strncpy(idxRec.InstanceDescription, description.c_str(), DESCRIPTION_MAX_LENGTH);
+      useDescrTag = OFFalse;
+    } else if (strcmp(SOPClassUID, UID_RETIRED_StoredPrintStorage) == 0)
+    {
+      strcpy(idxRec.InstanceDescription, "Stored Print");
+      useDescrTag = OFFalse;
     }
+  }
+
     /* get description from attribute specified above */
     if (useDescrTag)
     {
@@ -2949,13 +2918,50 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::storeRequest (
             }
         }
     }
+}
+/*************************
+**  Add data from imageFileName to database
+ */
+
+OFCondition DcmQueryRetrieveSQLDatabaseHandle::storeRequest (
+    const char  *SOPClassUID,
+    const char  * /*SOPInstanceUID*/,
+    const char  *imageFileName,
+    DcmQueryRetrieveDatabaseStatus *status,
+    OFBool      isNew)
+{
+    IdxRecord idxRec ;
+    bzero((char*)&idxRec, sizeof(idxRec));
+    DB_IdxInitRecord(&idxRec, 0) ;
+
+    strncpy(idxRec.filename, imageFileName, DBC_MAXSTRING);
+#ifdef DEBUG
+    DCMQRDB_DEBUG("DB_storeRequest () : storage request of file : " << idxRec.filename);
+#endif
+    strncpy (idxRec.SOPClassUID, SOPClassUID, UI_MAX_LENGTH);
+
+    /**** Get IdxRec values from ImageFile
+    ***/
+
+    DcmFileFormat dcmff;
+    PopulateIdxRecFromImageFile(imageFileName, idxRec, dcmff, status);
+    DcmDataset *dset = dcmff.getDataset();
+
+    /* InstanceStatus */
+    idxRec.hstat = (isNew) ? DVIF_objectIsNew : DVIF_objectIsNotNew;
+
+    /* InstanceDescription */
+    OFBool useDescrTag = OFTrue;
+    DcmTagKey descrTag = DCM_ImageComments;
+    ExtractInstanceDescription(SOPClassUID, idxRec, dset, useDescrTag, descrTag);
+
 
     /**** Print Elements
     ***/
 
 #ifdef DEBUG
     DCMQRDB_DEBUG("-- BEGIN Parameters to Register in DB");
-    for (i = 0 ; i < NBPARAMETERS ; i++) {  /* new definition */
+    for (int i = 0 ; i < NBPARAMETERS ; i++) {  /* new definition */
         DB_SmallDcmElmt *se = idxRec.param + i;
         const char* value = "";
         if (se->PValueField != NULL) value = se->PValueField;
@@ -2964,16 +2970,6 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::storeRequest (
     }
     DCMQRDB_DEBUG("-- END Parameters to Register in DB");
 #endif
-
-    /**** Goto the end of IndexFile, and write the record
-    ***/
-
-    pStudyDesc = (StudyDescRecord *)malloc (SIZEOF_STUDYDESC) ;
-    if (pStudyDesc == NULL) {
-      DCMQRDB_ERROR("DB_storeRequest: out of memory");
-      status->setStatus(STATUS_STORE_Refused_OutOfResources);
-      return (DcmQRSqlDatabaseError) ;
-    }
 
     //LPCSTR pstrConnection = _T("Provider=SQLOLEDB;Data Source=(local);Integrated Security=SSPI;Initial Catalog=dcmqrdb");
     //LPCSTR pstrConnection = _T("Provider=SQLOLEDB;Data Source=167.81.183.231\\SQLEXPRESS;Persist Security Info=True;User ID=t;Password=t");

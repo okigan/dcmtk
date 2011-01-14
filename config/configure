@@ -1320,9 +1320,9 @@ Optional Packages:
   --with-libwrap          include libwrap (TCP wrapper) support (default: auto)
   --without-libwrap       don't include libwrap support
   --with-libwrapinc=DIR   location of libwrap includes and libraries
-  --with-sndfile          include libsndfile support (default: auto)
-  --without-sndfile       don't include libsndfile support
-  --with-sndfileinc=DIR   location of libsndfile includes and libraries
+  --with-libsndfile          include libsndfile support (default: auto)
+  --without-libsndfile       don't include libsndfile support
+  --with-libsndfileinc=DIR   location of libsndfile includes and libraries
 
 Some influential environment variables:
   CC          C compiler command
@@ -1775,8 +1775,8 @@ ac_config_headers="$ac_config_headers include/dcmtk/config/cfunix.h"
 
 
 PACKAGE_VERSION_NUMBER="360"
-PACKAGE_VERSION_SUFFIX="-RC1"
-PACKAGE_DATE="2010-12-01"
+PACKAGE_VERSION_SUFFIX=""
+PACKAGE_DATE="2011-01-06"
 
 
 cat >>confdefs.h <<_ACEOF
@@ -9286,8 +9286,8 @@ fi
 
 
 
-{ echo "$as_me:$LINENO: checking whether the compiler supports supports operator delete (std::nothrow)" >&5
-echo $ECHO_N "checking whether the compiler supports supports operator delete (std::nothrow)... $ECHO_C" >&6; }
+{ echo "$as_me:$LINENO: checking whether the compiler supports operator delete (std::nothrow)" >&5
+echo $ECHO_N "checking whether the compiler supports operator delete (std::nothrow)... $ECHO_C" >&6; }
 if test "${ac_cv_cxx_nothrow_delete+set}" = set; then
   echo $ECHO_N "(cached) $ECHO_C" >&6
 else
@@ -9430,8 +9430,8 @@ fi
 
 
 LFSSUPPORT="auto"
-{ echo "$as_me:$LINENO: checking whether to enable long file support" >&5
-echo $ECHO_N "checking whether to enable long file support... $ECHO_C" >&6; }
+{ echo "$as_me:$LINENO: checking whether to enable large file support" >&5
+echo $ECHO_N "checking whether to enable large file support... $ECHO_C" >&6; }
 # Check whether --enable-lfs was given.
 if test "${enable_lfs+set}" = set; then
   enableval=$enable_lfs;  case "$enableval" in
@@ -21332,14 +21332,14 @@ _ACEOF
 	  CXXFLAGS="-D_POSIX_C_SOURCE=199506L $CXXFLAGS"
 	  CFLAGS="-D_POSIX_C_SOURCE=199506L $CFLAGS"
 	  ;;
+	*-*-openbsd4*)
+	  ;;
 	*-*-freebsd*)
-	  CXXFLAGS="-D_XOPEN_SOURCE_EXTENDED -D_XOPEN_SOURCE=600 -D_BSD_SOURCE -D_BSD_COMPAT -D_OSF_SOURCE -D_POSIX_C_SOURCE=199506L $CXXFLAGS"
-	  CFLAGS="-D_XOPEN_SOURCE_EXTENDED -D_XOPEN_SOURCE=600 -D_BSD_SOURCE -D_BSD_COMPAT -D_OSF_SOURCE -D_POSIX_C_SOURCE=199506L $CFLAGS"
 	  ;;
 	*-*-netbsdelf2*)
 	  ;;
 	*-*-darwin[8-9].*|*-*-darwin10.*)
-	  CXXFLAGS="-D_XOPEN_SOURCE_EXTENDED -D_BSD_SOURCE -D_BSD_COMPAT -D_OSF_SOURCE -D_DARWIN_C_SOURCE $CXXFLAGS"
+	  	  CXXFLAGS="-D_XOPEN_SOURCE_EXTENDED -D_BSD_SOURCE -D_BSD_COMPAT -D_OSF_SOURCE -D_DARWIN_C_SOURCE $CXXFLAGS"
 	  CFLAGS="-D_XOPEN_SOURCE_EXTENDED -D_BSD_SOURCE -D_BSD_COMPAT -D_OSF_SOURCE -D_DARWIN_C_SOURCE $CXXFLAGS"
 	  ;;
 	*)
@@ -21404,8 +21404,14 @@ _ACEOF
 	  CXXFLAGS="-D_POSIX_C_SOURCE=199506L $CXXFLAGS"
 	  CFLAGS="-D_POSIX_C_SOURCE=199506L $CFLAGS"
 	  ;;
+	*-*-openbsd4*)
+	  ;;
+	*-*-freebsd*)
+	  ;;
+	*-*-netbsdelf2*)
+	  ;;
 	*-*-darwin[8-9].*|*-*-darwin10.*)
-	  CXXFLAGS="-D_XOPEN_SOURCE_EXTENDED -D_BSD_SOURCE -D_BSD_COMPAT -D_OSF_SOURCE -D_DARWIN_C_SOURCE $CXXFLAGS"
+	  	  CXXFLAGS="-D_XOPEN_SOURCE_EXTENDED -D_BSD_SOURCE -D_BSD_COMPAT -D_OSF_SOURCE -D_DARWIN_C_SOURCE $CXXFLAGS"
 	  CFLAGS="-D_XOPEN_SOURCE_EXTENDED -D_BSD_SOURCE -D_BSD_COMPAT -D_OSF_SOURCE -D_DARWIN_C_SOURCE $CXXFLAGS"
 	  ;;
 	*)
@@ -21472,6 +21478,8 @@ if test $LFSSUPPORT = auto -o $LFSSUPPORT = lfs64; then
 
 
 
+  { echo "$as_me:$LINENO: checking for explicit large file support" >&5
+echo $ECHO_N "checking for explicit large file support... $ECHO_C" >&6; }
   ac_cv_lfs64_support=no
 
   ac_ext=c
@@ -21496,14 +21504,14 @@ FILE *f = fopen64("name", "r");
   return 0;
 }
 _ACEOF
-rm -f conftest.$ac_objext
-if { (ac_try="$ac_compile"
+rm -f conftest.$ac_objext conftest$ac_exeext
+if { (ac_try="$ac_link"
 case "(($ac_try" in
   *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
   *) ac_try_echo=$ac_try;;
 esac
 eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
-  (eval "$ac_compile") 2>conftest.er1
+  (eval "$ac_link") 2>conftest.er1
   ac_status=$?
   grep -v '^ *+' conftest.er1 >conftest.err
   rm -f conftest.er1
@@ -21512,7 +21520,8 @@ eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
   (exit $ac_status); } && {
 	 test -z "$ac_c_werror_flag" ||
 	 test ! -s conftest.err
-       } && test -s conftest.$ac_objext; then
+       } && test -s conftest$ac_exeext &&
+       $as_test_x conftest$ac_exeext; then
   ac_cv_lfs64_support=yes
 else
   echo "$as_me: failed program was:" >&5
@@ -21521,7 +21530,8 @@ sed 's/^/| /' conftest.$ac_ext >&5
 	ac_cv_lfs64_support=no
 fi
 
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+rm -f core conftest.err conftest.$ac_objext conftest_ipa8_conftest.oo \
+      conftest$ac_exeext conftest.$ac_ext
   ac_ext=cpp
 ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
@@ -21530,6 +21540,8 @@ ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 
   if test "$ac_cv_lfs64_support" = yes; then
+    { echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6; }
 
 cat >>confdefs.h <<\_ACEOF
 #define HAVE_LFS_SUPPORT
@@ -21540,6 +21552,9 @@ cat >>confdefs.h <<\_ACEOF
 #define _LARGEFILE64_SOURCE 1
 _ACEOF
 
+  else
+    { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
   fi
 
   if test $ac_cv_lfs64_support = yes ; then
@@ -27780,6 +27795,94 @@ else
 echo "${ECHO_T}no" >&6; }
 fi
 
+{ echo "$as_me:$LINENO: checking prototype for vsnprintf (in stdio.h stdarg.h)" >&5
+echo $ECHO_N "checking prototype for vsnprintf (in stdio.h stdarg.h)... $ECHO_C" >&6; }
+
+
+:
+
+ac_includes=""
+for ac_header in stdio.h stdarg.h
+do
+  ac_safe=`echo "$ac_header" | sed 'y%./+-%__p_%'`
+  if eval "test \"`echo '$''{'ac_cv_header_$ac_safe'}'`\" = yes"; then
+    ac_includes="$ac_includes
+#include<$ac_header>"
+  fi
+done
+tmp_save_1=`echo vsnprintf | tr ' :' '__'`
+if { as_var=ac_cv_prototype_$tmp_save_1; eval "test \"\${$as_var+set}\" = set"; }; then
+  echo $ECHO_N "(cached) $ECHO_C" >&6
+else
+  cat >conftest.$ac_ext <<_ACEOF
+/* confdefs.h.  */
+_ACEOF
+cat confdefs.h >>conftest.$ac_ext
+cat >>conftest.$ac_ext <<_ACEOF
+/* end confdefs.h.  */
+#ifdef __cplusplus
+extern "C" {
+#endif
+$ac_includes
+#ifdef __cplusplus
+}
+#endif
+typedef union { int member; } dummyStruct;
+#ifdef __cplusplus
+extern "C"
+#endif
+dummyStruct vsnprintf(dummyStruct);
+
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+rm -f conftest.$ac_objext
+if { (ac_try="$ac_compile"
+case "(($ac_try" in
+  *\"* | *\`* | *\\*) ac_try_echo=\$ac_try;;
+  *) ac_try_echo=$ac_try;;
+esac
+eval "echo \"\$as_me:$LINENO: $ac_try_echo\"") >&5
+  (eval "$ac_compile") 2>conftest.er1
+  ac_status=$?
+  grep -v '^ *+' conftest.er1 >conftest.err
+  rm -f conftest.er1
+  cat conftest.err >&5
+  echo "$as_me:$LINENO: \$? = $ac_status" >&5
+  (exit $ac_status); } && {
+	 test -z "$ac_cxx_werror_flag" ||
+	 test ! -s conftest.err
+       } && test -s conftest.$ac_objext; then
+  eval "ac_cv_prototype_$tmp_save_1=no"
+else
+  echo "$as_me: failed program was:" >&5
+sed 's/^/| /' conftest.$ac_ext >&5
+
+	eval "ac_cv_prototype_$tmp_save_1=yes"
+fi
+
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+fi
+if eval "test \"`echo '$''{'ac_cv_prototype_$tmp_save_1'}'`\" = yes"; then
+  { echo "$as_me:$LINENO: result: yes" >&5
+echo "${ECHO_T}yes" >&6; }
+  ac_tr_prototype=HAVE_PROTOTYPE_`echo $tmp_save_1 | tr '[a-z]' '[A-Z]'`
+  cat >>confdefs.h <<_ACEOF
+#define $ac_tr_prototype 1
+_ACEOF
+
+  :
+else
+  { echo "$as_me:$LINENO: result: no" >&5
+echo "${ECHO_T}no" >&6; }
+fi
+
 { echo "$as_me:$LINENO: checking prototype for wait3 (in libc.h sys/wait.h sys/time.h sys/resource.h)" >&5
 echo $ECHO_N "checking prototype for wait3 (in libc.h sys/wait.h sys/time.h sys/resource.h)... $ECHO_C" >&6; }
 
@@ -28547,7 +28650,7 @@ if test "${ac_cv_check_std_namespace+set}" = set; then
 else
   ac_link_o='${CXX-g++} -o conftest $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.o $LIBS 1>&5'
 cat > conftest.$ac_ext <<EOF
-#line 28550 "configure"
+#line 28653 "configure"
 #include "confdefs.h"
 
 #include <iostream>
@@ -29220,7 +29323,7 @@ if test "${ac_cv_check_class_template+set}" = set; then
 else
   ac_link_o='${CXX-g++} -o conftest $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.o $LIBS 1>&5'
 cat > conftest.$ac_ext <<EOF
-#line 29223 "configure"
+#line 29326 "configure"
 #include "confdefs.h"
 
 template <class T>
@@ -29293,7 +29396,7 @@ if test "${ac_cv_check_static_template_method+set}" = set; then
 else
   ac_link_o='${CXX-g++} -o conftest $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.o $LIBS 1>&5'
 cat > conftest.$ac_ext <<EOF
-#line 29296 "configure"
+#line 29399 "configure"
 #include "confdefs.h"
 
 void additive(int & i)
@@ -29366,7 +29469,7 @@ if test "${ac_cv_check_function_template+set}" = set; then
 else
   ac_link_o='${CXX-g++} -o conftest $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.o $LIBS 1>&5'
 cat > conftest.$ac_ext <<EOF
-#line 29369 "configure"
+#line 29472 "configure"
 #include "confdefs.h"
 
 template <class T>

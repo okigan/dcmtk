@@ -9,8 +9,8 @@ dnl Additional Package Information
 dnl -------------------------------------------------------
 
 PACKAGE_VERSION_NUMBER="360"
-PACKAGE_VERSION_SUFFIX="-RC1"
-PACKAGE_DATE="2010-12-01"
+PACKAGE_VERSION_SUFFIX=""
+PACKAGE_DATE="2011-01-06"
 
 AC_DEFINE_UNQUOTED(PACKAGE_VERSION_NUMBER,"${PACKAGE_VERSION_NUMBER}",[Define to the version number of this package.])
 AC_DEFINE_UNQUOTED(PACKAGE_VERSION_SUFFIX,"${PACKAGE_VERSION_SUFFIX}",[Define to the version suffix of this package.])
@@ -346,11 +346,11 @@ AC_ARG_ENABLE(threads,
 )
 
 dnl -------------------------------------------------------
-dnl Check for long file support
+dnl Check for large file support
 dnl -------------------------------------------------------
 
 LFSSUPPORT="auto"
-AC_MSG_CHECKING(whether to enable long file support)
+AC_MSG_CHECKING(whether to enable large file support)
 AC_ARG_ENABLE(lfs,
 [  --enable-lfs=TYPE       compile with LFS support (lfs/lfs64/auto=default)
   --disable-lfs           compile without LFS support],
@@ -599,10 +599,9 @@ if test $THREADSUPPORT = posix ; then
 	  CXXFLAGS="-D_POSIX_C_SOURCE=199506L $CXXFLAGS"
 	  CFLAGS="-D_POSIX_C_SOURCE=199506L $CFLAGS"
 	  ;;
+	*-*-openbsd4*)
+	  ;;
 	*-*-freebsd*)
-	  dnl On FreeBSD we need to have _XOPEN_SOURCE defined to 600 in order to enable certain features of unistd.h
-	  CXXFLAGS="-D_XOPEN_SOURCE_EXTENDED -D_XOPEN_SOURCE=600 -D_BSD_SOURCE -D_BSD_COMPAT -D_OSF_SOURCE -D_POSIX_C_SOURCE=199506L $CXXFLAGS"
-	  CFLAGS="-D_XOPEN_SOURCE_EXTENDED -D_XOPEN_SOURCE=600 -D_BSD_SOURCE -D_BSD_COMPAT -D_OSF_SOURCE -D_POSIX_C_SOURCE=199506L $CFLAGS"
 	  ;;
 	*-*-netbsdelf2*)
 	  ;;
@@ -642,6 +641,12 @@ if test $THREADSUPPORT = posix ; then
 	*-*-openbsd3*)
 	  CXXFLAGS="-D_POSIX_C_SOURCE=199506L $CXXFLAGS"
 	  CFLAGS="-D_POSIX_C_SOURCE=199506L $CFLAGS"
+	  ;;
+	*-*-openbsd4*)
+	  ;;
+	*-*-freebsd*)
+	  ;;
+	*-*-netbsdelf2*)
 	  ;;
 	*-*-darwin[[8-9]].*|*-*-darwin10.*)
 	  dnl On Mac OS X we need to have _DARWIN_C_SOURCE source defined to enable UNIX standard API for system headers
@@ -758,6 +763,7 @@ AC_CHECK_PROTOTYPE(socket, sys/types.h sys/socket.h)
 AC_CHECK_PROTOTYPE(strcasecmp, string.h)
 AC_CHECK_PROTOTYPE(strncasecmp, string.h)
 AC_CHECK_PROTOTYPE(usleep, libc.h unistd.h stdlib.h)
+AC_CHECK_PROTOTYPE(vsnprintf, stdio.h stdarg.h)
 AC_CHECK_PROTOTYPE(wait3, libc.h sys/wait.h sys/time.h sys/resource.h)
 AC_CHECK_PROTOTYPE(waitpid, sys/wait.h sys/time.h sys/resource.h)
 AC_CHECK_DECLARATION(struct utimbuf, sys/types.h utime.h sys/utime.h)
@@ -1234,9 +1240,9 @@ AC_MSG_CHECKING(whether to include sndfile support)
 
 AC_ARG_WITH(sndfile,
 
-  [  --with-sndfile          include libsndfile support (default: auto)
-  --without-sndfile       don't include libsndfile support
-  --with-sndfileinc=DIR   location of libsndfile includes and libraries],
+  [  --with-libsndfile          include libsndfile support (default: auto)
+  --without-libsndfile       don't include libsndfile support
+  --with-libsndfileinc=DIR   location of libsndfile includes and libraries],
 
   [ case "$withval" in
     yes)

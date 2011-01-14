@@ -1,5 +1,299 @@
 
-Changes between releases are documented here.
+Release 3.6.0 (Public Release - 2011-01-06)
+
+- Updated contents for the final release version of DCMTK 3.6.0.
+  Affects: ANNOUNCE.360
+           CMakeLists.txt
+           INSTALL
+           VERSION
+           config/configure
+           config/configure.in
+           doxygen/manpages/man1/*
+
+**** Changes from 2011.01.05 (schlachter)
+
+- Remove all windows line endings that were recently introduced.
+  Affects: ofstd/tests/tstthred.cc
+
+**** Changes from 2011.01.05 (onken)
+
+- Updated thread test in order to reflect missing OFSemaphore class
+  on Mac OS X.
+  Affects: ofstd/tests/tstthred.cc
+
+**** Changes from 2011.01.05 (riesmeier)
+
+- Updated information on tested FreeBSD systems.
+  Affects: INSTALL
+
+**** Changes from 2011.01.04 (onken)
+
+- Disabled class OFSemaphore under Mac OS X since semaphores must be named
+  in Mac OS X to work properly (currently, they are not). Threads are now
+  again enabled by default in Mac OS X with CMake.
+  Affects: CMakeLists.txt
+           INSTALL
+           ofstd/include/dcmtk/ofstd/ofthread.h
+           ofstd/libsrc/ofthread.cc
+
+**** Changes from 2011.01.03 (riesmeier)
+
+- Updated copyright date to the current year.
+  Affects: COPYRIGHT
+
+- Updated details on tested systems based on feedback from external testers.
+  Affects: INSTALL
+
+- Commented out unused variable in order to avoid warning message (gcc 2.95.3).
+  Affects: dcmjpls/libcharls/header.cc
+
+**** Changes from 2010.12.23 (riesmeier)
+
+- Updated contents for DCMTK 3.6.0-RC3 (third release candidate).
+  Affects: CMakeLists.txt
+           VERSION
+           config/configure
+           config/configure.in
+           doxygen/manpages/man1/*
+
+- Added FreeBSD 6.4 and 8.1 (x86) with gcc to the list of tested systems.
+  Affects: INSTALL
+
+**** Changes from 2010.12.22 (riesmeier)
+
+- Added list of people who have contributed to this new release of the DCMTK.
+  Affects: ANNOUNCE.360
+
+- Fixed some typos and little inconsistencies. Updated homepage of libxml.
+  Affects: INSTALL
+
+- Added support for OpenBSD 4.x: Do not specify any additional C/C++ flags.
+  Affects: config/configure
+           config/configure.in
+
+- OpenBSD does not like sigfillset() to be called with :: namespace prefix.
+  Affects: oflog/libsrc/threads.cc
+
+- Added OpenBSD 4.4 with gcc 3.3.5 (propolice) to the list of tested systems.
+  Affects: INSTALL
+
+**** Changes from 2010.12.21 (onken)
+
+- Fixed wrong response assignment in DcmSCU's C-STORE code. Thanks to
+  forum user "takeos" for the hint and fix.
+  Affects: dcmnet/libsrc/scu.cc
+
+**** Changes from 2010.12.20 (schlachter)
+
+- Fixed on FreeBSD by removing flags that hide strlcpy() and strlcat().
+  Affects: CMakeLists.txt
+
+- Correctly detect netinet/tcp.h and other headers on FreeBSD.
+  Affects: CMake/GenerateDCMTKConfigure.cmake
+
+**** Changes from 2010.12.20 (riesmeier)
+
+- Fixed possible NULL pointer dereferencing when checking the meta-header
+  version (and no data dictionary is loaded).
+  Affects: dcmdata/libsrc/dcfilefo.cc
+
+- Fixed wrong console application description (apparently copied from another
+  tool) and output the resource identifier in debug mode to the logger.
+  Affects: dcmdata/tests/tstpread.cc
+
+- Added explicit type casts in order to keep gcc 2.95.3 quiet.
+  Affects: ofstd/tests/toffile.cc
+           dcmdata/libsrc/dcmetinf.cc
+
+- Added short description on environment variables CC and CFLAGS.
+  Affects: INSTALL
+
+- Updated information on IRIX system that was used for cross-platform testing.
+  Affects: INSTALL
+
+**** Changes from 2010.12.17 (riesmeier)
+
+- Include another system header (stdio.h) needed for IRIX 6.3 with gcc 2.95.3.
+  Affects: dcmwlm/wwwapps/Makefile.dep
+           dcmwlm/wwwapps/preplock.cc
+
+- Check whether "feof" and "ferror" are defined as macros (e.g. on IRIX 6.3).
+  Affects: ofstd/include/dcmtk/ofstd/offile.h
+
+- Updated hyperlink to SGI's Notes on building Open Source software on IRIX.
+  Affects: INSTALL
+
+**** Changes from 2010.12.16 (riesmeier)
+
+- Fixed initialization of OFString variable (reported by gcc 2.95.3).
+  Thanks to Andreas Barth <andreas.barth@bruker-biospin.de> for the hint.
+  Affects: dcmtls/libsrc/tlsscu.cc
+
+- Added another Linux system to the list of tested Unix-like systems.
+  Affects: INSTALL
+
+- Slightly revised contents of the HISTORY file.
+  Affects: HISTORY
+
+- Added explicit type cast in order to keep VisualStudio 2005 quiet.
+  Affects: dcmdata/tests/i2dbmp.cc
+
+**** Changes from 2010.12.15 (riesmeier)
+
+- Updated contents for DCMTK 3.6.0-RC2 (second release candidate).
+  Affects: CMakeLists.txt
+           VERSION
+           config/configure
+           config/configure.in
+           doxygen/manpages/man1/*
+
+- Updated list of tested Unix-like systems (some are still marked with a '?').
+  Affects: INSTALL
+
+- Added missing prefix "ios::" to I/O manipulator "fixed" (reported on HP-UX).
+  Affects: dcmpstat/apps/dcmmklut.cc
+
+**** Changes from 2010.12.15 (schlachter)
+
+- Fixed a compile time error on HP-UX in oflog.
+  Affects: oflog/libsrc/unixsock.cc
+
+- Made OFFile compile successfully on HP-UX.
+  Affects: ofstd/include/dcmtk/ofstd/offile.h
+
+- Fixed a problem with a missing prototype for vsnprintf on HP-UX.
+  Affects: config/configure
+           config/configure.in
+           config/include/dcmtk/config/cfunix.h.in
+           dcmdata/apps/xml2dcm.cc
+           dcmqrdb/libsrc/dcmqrcnf.cc
+           dcmsr/libsrc/dsrxmld.cc
+
+**** Changes from 2010.12.13 (schlachter)
+
+- Fixed the explicit LFS test which produced wrong results on FreeBSD.
+  Affects: config/aclocal.m4
+           config/configure
+
+- Fix toffile by moving some casts to the correct position.
+  Affects: ofstd/tests/toffile.cc
+
+**** Changes from 2010.12.13 (riesmeier)
+
+- Removed FreeBSD flags introduced a couple of months ago since they caused
+  more problems than they solved.
+  Thanks to Alexander Haderer <alexander.haderer@charite.de> for the hint.
+  Affects: config/configure
+           config/configure.in
+
+- Consistently use "large file support" for LFS instead of "long file support".
+  Affects: config/aclocal.m4
+           config/include/dcmtk/config/cfunix.h.in
+
+- Added LFS configure options and other minor changes.
+  Affects: INSTALL
+
+**** Changes from 2010.12.10 (riesmeier)
+
+- Slightly revised wording after further proof-reading.
+  Affects: ANNOUNCE.360
+
+**** Changes from 2010.12.09 (riesmeier)
+
+- Updated content of anouncement file to be used for the official release.
+  However, this is only a first version that will certainly be updated again.
+  Affects: ANNOUNCE.360
+
+- Fixed minor inconsistencies (mainly in comments).
+  Affects: CMake/GenerateDCMTKConfigure.cmake
+
+- Consistently use "large file support" for LFS instead of "long file support".
+  Affects: config/configure
+           config/configure.in
+
+- Fixed typo in checking message.
+  Affects: config/aclocal.m4
+           config/configure
+           config/configure.in
+
+- Removed outdated note that wlmscpfs does not support multi-processing on
+  Windows systems.
+  Affects: INSTALL
+
+**** Changes from 2010.12.08 (schlachter)
+
+- Explicitely check for libtiff 3.7.0 or newer.
+  Affects: dcmimage/libsrc/dipitiff.cc
+
+- Document libtiff 3.7.4 requirement on windows.
+  Affects: INSTALL
+
+**** Changes from 2010.12.08 (riesmeier)
+
+- Added note that libtiff releases prior to version 3.7.0 will not work.
+  Affects: INSTALL
+
+- Fixed issue when linking "oflog" on Cygwin with CMake build system.
+  Affects: oflog/libsrc/CMakeLists.txt
+
+- Disable currently unused wide character file I/O functions in order to avoid
+  problems with old compilers (e.g. gcc 2.95.3).
+  Affects: config/docs/macros.txt
+           ofstd/include/dcmtk/ofstd/offile.h
+
+**** Changes from 2010.12.07 (riesmeier)
+
+- Updated list of tested Windows systems and some other related sections.
+  Affects: INSTALL
+
+**** Changes from 2010.12.06 (schlachter)
+
+- Fixed crash in oflog on Mac OS X 10.4.1 with gcc 4.0.1 due to different order
+  of execution of global destructors.
+  Thanks to Bernd Kuemmerlen <bernd.kuemmerlen@mevis.de> for the report.
+  Affects: oflog/libsrc/oflog.cc
+
+- Made the docs for the NDC clearer on how to avoid memleaks.
+  Affects: oflog/include/dcmtk/oflog/ndc.h
+
+- Fixed a correct warning from Intel Compiler 11.1 for shifting a Uint8 by 8.
+  Affects: dcmdata/libi2d/i2dbmps.cc
+
+- Fixed the i2dbmp test case for windows by opening files in binary mode.
+  Affects: dcmdata/tests/i2dbmp.cc
+
+- Removed BufferSize option from FileAppender due to problems with gcc 2.95.3.
+  Affects: oflog/include/dcmtk/oflog/fileap.h
+           oflog/libsrc/fileap.cc
+
+- Don't explicitely try to catch std::exception.
+  Affects: oflog/libsrc/appender.cc
+           oflog/libsrc/config.cc
+           oflog/libsrc/ndc.cc
+           oflog/libsrc/threads.cc
+
+**** Changes from 2010.12.06 (riesmeier)
+
+- Fixed issue when calling "make install-html" without "make html".
+  Thanks to Juergen Salk <juergen.salk@uni-ulm.de> for pointing this out.
+  Affects: doxygen/Makefile.in
+
+- Added explicit default constructor to keep Intel Compiler 11.1 quiet.
+  Affects: dcmimgle/include/dcmtk/dcmimgle/dipxrept.h
+
+- Moved option "-maxdepth" to beginning of find command to avoid warnings.
+  Affects: dcmwlm/data/Makefile.in
+
+- Fixed issue with large file support for current Cygwin systems (1.7.7-1).
+  Affects: ofstd/include/dcmtk/ofstd/offile.h
+
+- Restructured calculation of seek position in order to avoid warning messages.
+  Affects: ofstd/tests/toffile.cc
+
+- Fixed little inconsistency regarding the libsndfile configure options.
+  Thanks to Juergen Salk <juergen.salk@uni-ulm.de> for the report and fix.
+  Affects: config/configure
+           config/configure.in
 
 **** Changes from 2010.12.03 (riesmeier)
 
@@ -2197,9 +2491,9 @@ Changes between releases are documented here.
            dcmdata/apps/CMakeLists.txt
            dcmimage/apps/CMakeLists.txt
            dcmimgle/apps/CMakeLists.txt
-           dcmjpeg/apps/
-           dcmjpls/apps
-           dcmnet/apps
+           dcmjpeg/apps/CMakeLists.txt
+           dcmjpls/apps/CMakeLists.txt
+           dcmnet/apps/CMakeLists.txt
            dcmpstat/CMakeLists.txt
            dcmpstat/apps/CMakeLists.txt
            dcmqrdb/apps/CMakeLists.txt

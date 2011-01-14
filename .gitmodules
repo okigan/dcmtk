@@ -1,0 +1,3 @@
+[submodule "dcmqrdb_mssql"]
+	path = dcmqrdb_mssql
+	url = ./dcmqrdb_mssql

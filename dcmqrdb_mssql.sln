@@ -1,0 +1,10 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 10.00
+# Visual Studio 2008
+Project("{4F174C21-8C12-11D0-8340-0000F80270F8}") = "dcmqrdb_mssql", "dcmqrdb_mssql\dcmqrdb_mssql.dbp", "{56179753-C902-4E0C-9566-D2935A718921}"
+EndProject
+Global
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

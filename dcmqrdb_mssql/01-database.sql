@@ -1,0 +1,112 @@
+USE [master]
+GO
+
+/****** Object:  Database [dcmqrdb_mssql]    Script Date: 01/12/2011 11:45:18 ******/
+IF  EXISTS (SELECT name FROM sys.databases WHERE name = N'dcmqrdb_mssql')
+DROP DATABASE [dcmqrdb_mssql]
+GO
+
+USE [master]
+GO
+
+/****** Object:  Database [dcmqrdb_mssql]    Script Date: 01/12/2011 11:45:18 ******/
+CREATE DATABASE [dcmqrdb_mssql] ON  PRIMARY 
+( NAME = N'dcmqrdb', FILENAME = N'$(CURRDIR)\dcmqrdb_mssql.mdf' , SIZE = 2048KB , MAXSIZE = UNLIMITED, FILEGROWTH = 1024KB )
+ LOG ON 
+( NAME = N'dcmqrdb_log', FILENAME = N'$(CURRDIR)\dcmqrdb_mssql_log.ldf' , SIZE = 512KB , MAXSIZE = 2048GB , FILEGROWTH = 10%)
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET COMPATIBILITY_LEVEL = 100
+GO
+
+IF (1 = FULLTEXTSERVICEPROPERTY('IsFullTextInstalled'))
+begin
+EXEC [dcmqrdb_mssql].[dbo].[sp_fulltext_database] @action = 'enable'
+end
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET ANSI_NULL_DEFAULT ON 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET ANSI_NULLS ON 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET ANSI_PADDING ON 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET ANSI_WARNINGS ON 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET ARITHABORT ON 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET AUTO_CLOSE OFF 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET AUTO_CREATE_STATISTICS ON 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET AUTO_SHRINK OFF 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET AUTO_UPDATE_STATISTICS ON 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET CURSOR_CLOSE_ON_COMMIT OFF 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET CURSOR_DEFAULT  LOCAL 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET CONCAT_NULL_YIELDS_NULL ON 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET NUMERIC_ROUNDABORT OFF 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET QUOTED_IDENTIFIER ON 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET RECURSIVE_TRIGGERS OFF 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET  DISABLE_BROKER 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET AUTO_UPDATE_STATISTICS_ASYNC OFF 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET DATE_CORRELATION_OPTIMIZATION OFF 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET TRUSTWORTHY OFF 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET ALLOW_SNAPSHOT_ISOLATION OFF 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET PARAMETERIZATION SIMPLE 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET READ_COMMITTED_SNAPSHOT OFF 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET HONOR_BROKER_PRIORITY OFF 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET  READ_WRITE 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET RECOVERY FULL 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET  MULTI_USER 
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET PAGE_VERIFY NONE  
+GO
+
+ALTER DATABASE [dcmqrdb_mssql] SET DB_CHAINING OFF 
+GO
+
+

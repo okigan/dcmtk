@@ -1,0 +1,15 @@
+# Microsoft Developer Studio Project File - Database Project
+Begin DataProject = "dcmqrdb_mssql"
+   MSDTVersion = "80"
+   Script = "01-database.sql"
+   Script = "02-tables.sql"
+   Script = "bootstrap.sql"
+   Node = "bootstrap.txt"
+   Begin DBRefFolder = "Database References"
+      Begin DBRefNode = "SQLOLEDB.(local)\SQLEXPRESS.master"
+         ConnectStr = "Provider=SQLOLEDB;Data Source=(local)\sqlexpress;Integrated Security=SSPI"
+         Provider = "{7F041D59-D76A-44ED-9AA2-FBF6B0548B80}"
+         Colorizer = 65536
+      End
+   End
+End

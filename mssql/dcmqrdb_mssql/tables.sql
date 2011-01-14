@@ -12,17 +12,17 @@ GO
 USE [dcmqrdb_mssql]
 GO
 
-/****** Object:  Table [dbo].[tbInstance]    Script Date: 01/12/2011 11:48:19 ******/
+
 IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[tbInstance]') AND type in (N'U'))
 DROP TABLE [dbo].[tbInstance]
 GO
 
-/****** Object:  Table [dbo].[tbSeries]    Script Date: 01/12/2011 11:48:19 ******/
+
 IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[tbSeries]') AND type in (N'U'))
 DROP TABLE [dbo].[tbSeries]
 GO
 
-/****** Object:  Table [dbo].[tbStudy]    Script Date: 01/12/2011 11:48:19 ******/
+
 IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[tbStudy]') AND type in (N'U'))
 DROP TABLE [dbo].[tbStudy]
 GO
@@ -30,7 +30,7 @@ GO
 USE [dcmqrdb_mssql]
 GO
 
-/****** Object:  Table [dbo].[tbInstance]    Script Date: 01/12/2011 11:48:19 ******/
+
 SET ANSI_NULLS ON
 GO
 
@@ -52,7 +52,7 @@ GO
 USE [dcmqrdb_mssql]
 GO
 
-/****** Object:  Table [dbo].[tbSeries]    Script Date: 01/12/2011 11:48:19 ******/
+
 SET ANSI_NULLS ON
 GO
 
@@ -74,7 +74,7 @@ GO
 USE [dcmqrdb_mssql]
 GO
 
-/****** Object:  Table [dbo].[tbStudy]    Script Date: 01/12/2011 11:48:19 ******/
+
 SET ANSI_NULLS ON
 GO
 

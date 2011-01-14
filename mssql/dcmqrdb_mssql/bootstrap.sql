@@ -1,2 +1,4 @@
-﻿:r  01-database.sql
-:r  02-tables.sql
+﻿:r database.sql
+:r tables.sql
+:r views.sql
+:r procs.sql

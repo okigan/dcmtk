@@ -1,7 +1,7 @@
 USE [master]
 GO
 
-/****** Object:  Database [dcmqrdb_mssql]    Script Date: 01/12/2011 11:45:18 ******/
+
 IF  EXISTS (SELECT name FROM sys.databases WHERE name = N'dcmqrdb_mssql')
 DROP DATABASE [dcmqrdb_mssql]
 GO
@@ -9,7 +9,7 @@ GO
 USE [master]
 GO
 
-/****** Object:  Database [dcmqrdb_mssql]    Script Date: 01/12/2011 11:45:18 ******/
+
 CREATE DATABASE [dcmqrdb_mssql] ON  PRIMARY 
 ( NAME = N'dcmqrdb', FILENAME = N'$(CURRDIR)\dcmqrdb_mssql.mdf' , SIZE = 2048KB , MAXSIZE = UNLIMITED, FILEGROWTH = 1024KB )
  LOG ON 

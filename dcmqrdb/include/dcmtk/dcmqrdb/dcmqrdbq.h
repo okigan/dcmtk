@@ -46,6 +46,8 @@ class DcmQueryRetrieveConfig;
 class IDbSystem;
 class IDbDatabase;
 
+//TODO: move this (and other to a common area with index db)
+#define DBC_MAXSTRING           256
 
 
 /// upper limit for the number of studies per storage area
@@ -349,6 +351,8 @@ private:
   DB_Private_Handle *handle_; //TODO: remove 
   IDbSystem *piDbSystem_;
   IDbDatabase *piDbDatabase_;
+
+  char storageArea_[DBC_MAXSTRING+1] ;
 
 
   /// flag indicating whether or not the quota system is enabled

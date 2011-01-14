@@ -137,74 +137,6 @@ static char *DB_strdup(const char* str)
 }
 
 /************
-**      Add UID in Index Record to the UID found list
- */
-//TODO: remove ?
-static void DB_UIDAddFound (
-                DB_Private_Handle       *phandle,
-                IdxRecord               *idxRec
-                )
-{
-    DB_UidList *plist ;
-
-    plist = (DB_UidList *) malloc (sizeof (DB_UidList)) ;
-    if (plist == NULL) {
-        DCMQRDB_ERROR("DB_UIDAddFound: out of memory");
-        return;
-    }
-    plist->next = phandle->uidList ;
-    plist->patient = NULL ;
-    plist->study = NULL ;
-    plist->serie = NULL ;
-    plist->image = NULL ;
-
-    if ((int)phandle->queryLevel >= PATIENT_LEVEL)
-        plist->patient = DB_strdup ((char *) idxRec->PatientID) ;
-    if ((int)phandle->queryLevel >= STUDY_LEVEL)
-        plist->study = DB_strdup ((char *) idxRec->StudyInstanceUID) ;
-    if ((int)phandle->queryLevel >= SERIE_LEVEL)
-        plist->serie = DB_strdup ((char *) idxRec->SeriesInstanceUID) ;
-    if ((int)phandle->queryLevel >= IMAGE_LEVEL)
-        plist->image = DB_strdup ((char *) idxRec->SOPInstanceUID) ;
-
-    phandle->uidList = plist ;
-}
-
-
-/************
-**      Search if an Index Record has already been found
- */
-//TODO: remove?
-static int DB_UIDAlreadyFound (
-                DB_Private_Handle       *phandle,
-                IdxRecord               *idxRec
-                )
-{
-    DB_UidList *plist ;
-
-    for (plist = phandle->uidList ; plist ; plist = plist->next) {
-        if (  ((int)phandle->queryLevel >= PATIENT_LEVEL)
-              && (strcmp (plist->patient, (char *) idxRec->PatientID) != 0)
-            )
-            continue ;
-        if (  ((int)phandle->queryLevel >= STUDY_LEVEL)
-              && (strcmp (plist->study, (char *) idxRec->StudyInstanceUID) != 0)
-            )
-            continue ;
-        if (  ((int)phandle->queryLevel >= SERIE_LEVEL)
-              && (strcmp (plist->serie, (char *) idxRec->SeriesInstanceUID) != 0)
-            )
-            continue ;
-        if (  ((int)phandle->queryLevel >= IMAGE_LEVEL)
-              && (strcmp (plist->image, (char *) idxRec->SOPInstanceUID) != 0)
-            )
-            continue ;
-        return (OFTrue) ;
-    }
-    return (OFFalse) ;
-}
-
-/************
  *      Initializes addresses in an IdxRecord
  */
 
@@ -378,192 +310,6 @@ static void DB_IdxInitRecord (IdxRecord *idx, int linksOnly)
     idx -> param[RECORDIDX_PerformingPhysicianName]. PValueField = (char *) idx -> PerformingPhysicianName ;
     idx -> param[RECORDIDX_PresentationLabel]. PValueField = (char *) idx -> PresentationLabel ;
 }
-
-#if 0
-/******************************
- *      Read an Index record
- */
-
-OFCondition DcmQueryRetrieveSQLDatabaseHandle::DB_IdxRead (int idx, IdxRecord *idxRec)
-{
-
-    /*** Goto the right index in file
-    **/
-
-    DB_lseek (handle_ -> pidx, (long) (SIZEOF_STUDYDESC + idx * SIZEOF_IDXRECORD), SEEK_SET) ;
-
-    /*** Read the record
-    **/
-
-    if (read (handle_ -> pidx, (char *) idxRec, SIZEOF_IDXRECORD) != SIZEOF_IDXRECORD)
-        return (DcmQRIndexDatabaseError) ;
-
-    DB_lseek (handle_ -> pidx, 0L, SEEK_SET) ;
-
-    /*** Initialize record links
-    **/
-
-    DB_IdxInitRecord (idxRec, 1) ;
-    return EC_Normal ;
-}
-
-
-/******************************
- *      Add an Index record
- *      Returns the index allocated for this record
- */
-
-static OFCondition DB_IdxAdd (DB_Private_Handle *phandle, int *idx, IdxRecord *idxRec)
-{
-    IdxRecord   rec ;
-    OFCondition cond = EC_Normal;
-
-    /*** Find free place for the record
-    *** A place is free if filename is empty
-    **/
-
-    *idx = 0 ;
-
-    DB_lseek (phandle -> pidx, (long) SIZEOF_STUDYDESC, SEEK_SET) ;
-    while (read (phandle -> pidx, (char *) &rec, SIZEOF_IDXRECORD) == SIZEOF_IDXRECORD) {
-        if (rec. filename [0] == '\0')
-            break ;
-        (*idx)++ ;
-    }
-
-    /*** We have either found a free place or we are at the end of file. **/
-
-
-    DB_lseek (phandle -> pidx, (long) (SIZEOF_STUDYDESC + (*idx) * SIZEOF_IDXRECORD), SEEK_SET) ;
-
-    if (write (phandle -> pidx, (char *) idxRec, SIZEOF_IDXRECORD) != SIZEOF_IDXRECORD)
-        cond = DcmQRIndexDatabaseError ;
-    else
-        cond = EC_Normal ;
-
-    DB_lseek (phandle -> pidx, 0L, SEEK_SET) ;
-
-    return cond ;
-}
-
-
-/******************************
- *      Change the StudyDescRecord
- */
-
-OFCondition DcmQueryRetrieveSQLDatabaseHandle::DB_StudyDescChange(StudyDescRecord *pStudyDesc)
-{
-    OFCondition cond = EC_Normal;
-    DB_lseek (handle_ -> pidx, 0L, SEEK_SET) ;
-    if (write (handle_ -> pidx, (char *) pStudyDesc, SIZEOF_STUDYDESC) != SIZEOF_STUDYDESC) cond = DcmQRIndexDatabaseError;
-    DB_lseek (handle_ -> pidx, 0L, SEEK_SET) ;
-    return cond ;
-}
-
-/******************************
- *      Init an Index record loop
- */
-
-OFCondition DcmQueryRetrieveSQLDatabaseHandle::DB_IdxInitLoop(int *idx)
-{
-    DB_lseek (handle_ -> pidx, SIZEOF_STUDYDESC, SEEK_SET) ;
-    *idx = -1 ;
-    return EC_Normal ;
-}
-
-/******************************
- *      Get next Index record
- *      On return, idx is initialized with the index of the record read
- */
-
-OFCondition DcmQueryRetrieveSQLDatabaseHandle::DB_IdxGetNext(int *idx, IdxRecord *idxRec)
-{
-
-    (*idx)++ ;
-    DB_lseek (handle_ -> pidx, SIZEOF_STUDYDESC + (long)(*idx) * SIZEOF_IDXRECORD, SEEK_SET) ;
-    while (read (handle_ -> pidx, (char *) idxRec, SIZEOF_IDXRECORD) == SIZEOF_IDXRECORD) {
-        if (idxRec -> filename [0] != '\0') {
-            DB_IdxInitRecord (idxRec, 1) ;
-
-            return EC_Normal ;
-        }
-        (*idx)++ ;
-    }
-
-    DB_lseek (handle_ -> pidx, 0L, SEEK_SET) ;
-
-    return DcmQRIndexDatabaseError ;
-}
-
-
-/******************************
- *      Get next Index record
- *      On return, idx is initialized with the index of the record read
- */
-
-OFCondition DcmQueryRetrieveSQLDatabaseHandle::DB_GetStudyDesc (StudyDescRecord *pStudyDesc)
-{
-
-    DB_lseek (handle_ -> pidx, 0L, SEEK_SET) ;
-    if ( read (handle_ -> pidx, (char *) pStudyDesc, SIZEOF_STUDYDESC) == SIZEOF_STUDYDESC )
-        return EC_Normal ;
-
-    DB_lseek (handle_ -> pidx, 0L, SEEK_SET) ;
-
-    return DcmQRIndexDatabaseError ;
-}
-
-
-/******************************
- *      Remove an Index record
- *      Just put a record with filename == ""
- */
-
-OFCondition DcmQueryRetrieveSQLDatabaseHandle::DB_IdxRemove(int idx)
-{
-    IdxRecord   rec ;
-    OFCondition cond = EC_Normal;
-
-    DB_lseek (handle_ -> pidx, SIZEOF_STUDYDESC + (long)idx * SIZEOF_IDXRECORD, SEEK_SET) ;
-    DB_IdxInitRecord (&rec, 0) ;
-
-    rec. filename [0] = '\0' ;
-    if (write (handle_ -> pidx, (char *) &rec, SIZEOF_IDXRECORD) == SIZEOF_IDXRECORD)
-        cond = EC_Normal ;
-    else
-        cond = DcmQRIndexDatabaseError ;
-
-    DB_lseek (handle_ -> pidx, 0L, SEEK_SET) ;
-
-    return cond ;
-}
-
-OFCondition DcmQueryRetrieveSQLDatabaseHandle::DB_lock(OFBool exclusive)
-{
-    int lockmode;
-
-    if (exclusive) {
-        lockmode = LOCK_EX;     /* exclusive lock */
-    } else {
-        lockmode = LOCK_SH;     /* shared lock */
-    }
-    if (dcmtk_flock(handle_->pidx, lockmode) < 0) {
-        dcmtk_plockerr("DB_lock");
-        return DcmQRIndexDatabaseError;
-    }
-    return EC_Normal;
-}
-
-OFCondition DcmQueryRetrieveSQLDatabaseHandle::DB_unlock()
-{
-    if (dcmtk_flock(handle_->pidx, LOCK_UN) < 0) {
-        dcmtk_plockerr("DB_unlock");
-        return DcmQRIndexDatabaseError;
-    }
-    return EC_Normal;
-}
-
-#endif
 
 /*******************
  *    Free an element List
@@ -2919,6 +2665,19 @@ void ExtractInstanceDescription(char const*SOPClassUID, IdxRecord &idxRec, DcmDa
         }
     }
 }
+void PrintIdxRecord(IdxRecord &idxRec)
+{
+  DCMQRDB_DEBUG("-- BEGIN Parameters to Register in DB");
+  for (int i = 0 ; i < NBPARAMETERS ; i++) {  /* new definition */
+    DB_SmallDcmElmt *se = idxRec.param + i;
+    const char* value = "";
+    if (se->PValueField != NULL) value = se->PValueField;
+    DcmTag tag(se->XTag);
+    DCMQRDB_DEBUG(" " << tag.getTagName() << ": \"" << value << "\"");
+  }
+  DCMQRDB_DEBUG("-- END Parameters to Register in DB");
+}
+
 /*************************
 **  Add data from imageFileName to database
  */
@@ -2940,9 +2699,6 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::storeRequest (
 #endif
     strncpy (idxRec.SOPClassUID, SOPClassUID, UI_MAX_LENGTH);
 
-    /**** Get IdxRec values from ImageFile
-    ***/
-
     DcmFileFormat dcmff;
     PopulateIdxRecFromImageFile(imageFileName, idxRec, dcmff, status);
     DcmDataset *dset = dcmff.getDataset();
@@ -2955,61 +2711,30 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::storeRequest (
     DcmTagKey descrTag = DCM_ImageComments;
     ExtractInstanceDescription(SOPClassUID, idxRec, dset, useDescrTag, descrTag);
 
-
-    /**** Print Elements
-    ***/
-
 #ifdef DEBUG
-    DCMQRDB_DEBUG("-- BEGIN Parameters to Register in DB");
-    for (int i = 0 ; i < NBPARAMETERS ; i++) {  /* new definition */
-        DB_SmallDcmElmt *se = idxRec.param + i;
-        const char* value = "";
-        if (se->PValueField != NULL) value = se->PValueField;
-        DcmTag tag(se->XTag);
-        DCMQRDB_DEBUG(" " << tag.getTagName() << ": \"" << value << "\"");
-    }
-    DCMQRDB_DEBUG("-- END Parameters to Register in DB");
+    PrintIdxRecord(idxRec);
 #endif
 
-    //LPCSTR pstrConnection = _T("Provider=SQLOLEDB;Data Source=(local);Integrated Security=SSPI;Initial Catalog=dcmqrdb");
-    //LPCSTR pstrConnection = _T("Provider=SQLOLEDB;Data Source=167.81.183.231\\SQLEXPRESS;Persist Security Info=True;User ID=t;Password=t");
-
-    //CAutoPtr<IDbSystem> piDbSystem(new COledbSystem());
-
-    //piDbSystem->Initialize();
     {
-      //CAutoPtr<IDbDatabase> pDb(piDbSystem->CreateDatabase());
       BOOL bRes = FALSE;
-      //BOOL bRes = pDb->Open(NULL, pstrConnection, _T(""), _T(""), DB_OPEN_READ_ONLY);
-      //if( !bRes ) {
-      //  TCHAR szMsg[256];
-      //  pDb->GetErrors()->GetError(0)->GetMessage(szMsg, 256);
-      //  ::MessageBox( NULL, szMsg, _T("Database Test"), MB_OK|MB_ICONERROR);
-      //  return EC_MemoryExhausted;
-      //}
-
-      /*{
-        CAutoPtr<IDbRecordset> pRec(piDbSystem->CreateRecordset(pDb));
-        bRes = pRec->Open(_T("SELECT * FROM [dbo].[tbStudy]"), DB_OPEN_TYPE_DYNASET);
-
-        while(!pRec->IsEOF()){
-          long key;
-          TCHAR stuiid[128];
-          pRec->GetField(pRec->GetColumnIndex("StudyKey"), key);
-          pRec->GetField(pRec->GetColumnIndex("StudyUiid"), stuiid, ARRAYSIZE(stuiid));
-          pRec->MoveNext();
-        }
-      }*/
 
       CAutoPtr<IDbCommand> pCmd(piDbSystem_->CreateCommand(piDbDatabase_));
-      bRes = pCmd->Create(_T("EXEC [dcmqrdb].[dbo].[spRegisterDcmInstance] @studyUiid = ?, @seriesUiid = ?, @instanceUiid = ?;"));
+      bRes = pCmd->Create(_T(
+        "EXEC [dcmqrdb_mssql].[dbo].[spRegisterDcmInstance]"
+        "  @studyUiid = ?"
+        ", @seriesUiid = ?"
+        ", @instanceUiid = ?;"
+        ));
       bRes = pCmd->SetParam(0, CA2T((idxRec).StudyInstanceUID));
       bRes = pCmd->SetParam(1, CA2T((idxRec).SeriesInstanceUID));
       bRes = pCmd->SetParam(2, CA2T((idxRec).SOPInstanceUID));
       CAutoPtr<IDbRecordset> pRec(piDbSystem_->CreateRecordset(piDbDatabase_));
       bRes = pCmd->Execute(pRec);
+
+      //TODO: check return status
+      //TODO: have the stored procedure return the path for previously
+      //registered file (if any) and remove that file
     }
-    //piDbSystem->Terminate();
 
     return EC_Normal;
 
@@ -3230,26 +2955,26 @@ DcmQueryRetrieveSQLDatabaseHandle::DcmQueryRetrieveSQLDatabaseHandle(
     long maxStudiesPerStorageArea,
     long maxBytesPerStudy,
     OFCondition& result)
-: 
-  quotaSystemEnabled(OFTrue)
-, doCheckFindIdentifier(OFFalse)
-, doCheckMoveIdentifier(OFFalse)
-, fnamecreator()
+    :   quotaSystemEnabled(OFTrue)
+    , doCheckFindIdentifier(OFFalse)
+    , doCheckMoveIdentifier(OFFalse)
+    , fnamecreator()
 {
+    handle_ = NULL;
 
-    handle_ = new DB_Private_Handle;
-    
+    //TODO: clean up the strcpy
+    strcpy(storageArea_, storageArea);
 
     BOOL bRet = FALSE;
     bRet = OpenDbSystem(0, DB_SYSTEM_OLEDB, &piDbSystem_);
-    
+
     CAutoPtr<IDbDatabase> pDb(piDbSystem_->CreateDatabase());
     BOOL bRes = pDb->Open(NULL, CA2T(connectionString), _T(""), _T(""), DB_OPEN_READ_ONLY);
     if( !bRes ) {
-      TCHAR szMsg[256];
-      pDb->GetErrors()->GetError(0)->GetMessage(szMsg, 256);
-      ::MessageBox( NULL, szMsg, _T("Database Test"), MB_OK|MB_ICONERROR);
-      //return EC_MemoryExhausted;
+        TCHAR szMsg[256];
+        pDb->GetErrors()->GetError(0)->GetMessage(szMsg, 256);
+        ::MessageBox( NULL, szMsg, _T("Database Test"), MB_OK|MB_ICONERROR);
+        //return EC_MemoryExhausted;
     }
 
     piDbDatabase_ = pDb.Detach();
@@ -3258,7 +2983,7 @@ DcmQueryRetrieveSQLDatabaseHandle::DcmQueryRetrieveSQLDatabaseHandle(
 #ifdef DEBUG
     DCMQRDB_DEBUG("DB_createHandle () : Handle created for " << storageArea);
     DCMQRDB_DEBUG("                     maxStudiesPerStorageArea: " << maxStudiesPerStorageArea
-            << " maxBytesPerStudy: " << maxBytesPerStudy);
+        << " maxBytesPerStudy: " << maxBytesPerStudy);
 #endif
 
     if (maxStudiesPerStorageArea > DB_UpperMaxStudies) {
@@ -3272,51 +2997,6 @@ DcmQueryRetrieveSQLDatabaseHandle::DcmQueryRetrieveSQLDatabaseHandle(
     if (maxBytesPerStudy < 0 || maxBytesPerStudy > DB_UpperMaxBytesPerStudy) {
         maxBytesPerStudy = DB_UpperMaxBytesPerStudy;
     }
-
-//TODO: remove
-#if 0
-    if (handle_) {
-        sprintf (handle_ -> storageArea,"%s", storageArea);
-        sprintf (handle_ -> indexFilename,"%s%c%s", storageArea, PATH_SEPARATOR, DBINDEXFILE);
-
-        /* create index file if it does not already exist */
-        FILE* f = fopen(handle_->indexFilename, "ab");
-        if (f == NULL) {
-            char buf[256];
-            DCMQRDB_ERROR(handle_->indexFilename << ": " << OFStandard::strerror(errno, buf, sizeof(buf)));
-            result = DcmQRSqlDatabaseError;
-            return;
-        }
-        fclose(f);
-
-        /* open fd of index file */
-#ifdef O_BINARY
-        handle_ -> pidx = open(handle_ -> indexFilename, O_RDWR | O_BINARY );
-#else
-        handle_ -> pidx = open(handle_ -> indexFilename, O_RDWR );
-#endif
-        if ( handle_ -> pidx == (-1) )
-        {
-           result = DcmQRSqlDatabaseError;
-           return;
-        }
-        else {
-            handle_ -> idxCounter = -1;
-            handle_ -> findRequestList = NULL;
-            handle_ -> findResponseList = NULL;
-            handle_ -> maxBytesPerStudy = maxBytesPerStudy;
-            handle_ -> maxStudiesAllowed = maxStudiesPerStorageArea;
-            handle_ -> uidList = NULL;
-            result = EC_Normal;
-            return;
-        }
-    }
-    else
-    {
-        result = DcmQRSqlDatabaseError;
-        return;
-    }
-#endif
 }
 
 /***********************
@@ -3369,7 +3049,7 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::makeNewStoreFileName(
   // unsigned int seed = fnamecreator.hashString(SOPInstanceUID);
   unsigned int seed = (unsigned int)time(NULL);
   newImageFileName[0]=0; // return empty string in case of error
-  if (! fnamecreator.makeFilename(seed, handle_->storageArea, prefix, ".dcm", filename)){
+  if (! fnamecreator.makeFilename(seed, this->storageArea_, prefix, ".dcm", filename)){
     return DcmQRSqlDatabaseError;
   }
 
@@ -3423,116 +3103,10 @@ DcmQueryRetrieveDatabaseHandle *DcmQueryRetrieveSQLDatabaseHandleFactory::create
 {
   return new DcmQueryRetrieveSQLDatabaseHandle(
 //TODO: get from config
-    "Provider=SQLOLEDB;Data Source=167.81.183.231\\SQLEXPRESS;Persist Security Info=True;User ID=t;Password=t",
+    //"Provider=SQLOLEDB;Data Source=localhost\\SQLEXPRESS;Persist Security Info=True;User ID=t;Password=t",
+    //"Provider=SQLOLEDB;Data Source=localhost\\SQLEXPRESS;"
+    config_->getConnectionString(calledAETitle),
     config_->getStorageArea(calledAETitle),
     config_->getMaxStudies(calledAETitle),
     config_->getMaxBytesPerStudy(calledAETitle), result);
 }
-
-
-/*
- * CVS Log
- * $Log: dcmqrdbi.cc,v $
- * Revision 1.29  2010-11-05 10:29:55  joergr
- * Added support for new Implantation Plan SR Document Storage SOP Class.
- *
- * Revision 1.28  2010-11-01 13:37:32  uli
- * Fixed some compiler warnings reported by gcc with additional flags.
- *
- * Revision 1.27  2010-10-20 07:41:36  uli
- * Made sure isalpha() & friends are only called with valid arguments.
- *
- * Revision 1.26  2010-10-14 15:03:38  joergr
- * Added support for "new" SR Storage SOP Classes to storeRequest().
- *
- * Revision 1.25  2010-10-14 13:14:35  joergr
- * Updated copyright header. Added reference to COPYRIGHT file.
- *
- * Revision 1.24  2010-10-01 12:25:29  uli
- * Fixed most compiler warnings in remaining modules.
- *
- * Revision 1.23  2010-09-24 13:34:17  joergr
- * Compared names of SOP Class UIDs with 2009 edition of the DICOM standard. The
- * resulting name changes are mainly caused by the fact that the corresponding
- * SOP Class is now retired.
- *
- * Revision 1.22  2010-09-09 16:54:32  joergr
- * Further code clean-up and minor changes to log messages.
- *
- * Revision 1.21  2010-09-09 15:00:03  joergr
- * Made log messages more consistent. Replaced '\n' by OFendl where appropriate.
- *
- * Revision 1.20  2010-08-09 13:23:32  joergr
- * Updated data dictionary to 2009 edition of the DICOM standard. From now on,
- * the official "keyword" is used for the attribute name which results in a
- * number of minor changes (e.g. "PatientsName" is now called "PatientName").
- *
- * Revision 1.19  2010-06-03 10:34:57  joergr
- * Replaced calls to strerror() by new helper function OFStandard::strerror()
- * which results in using the thread safe version of strerror() if available.
- *
- * Revision 1.18  2009-12-02 16:27:05  joergr
- * Sightly modified source code formatting.
- *
- * Revision 1.17  2009-11-24 10:10:42  uli
- * Switched to logging mechanism provided by the "new" oflog module.
- *
- * Revision 1.16  2009-08-21 09:54:11  joergr
- * Replaced tabs by spaces and updated copyright date.
- *
- * Revision 1.15  2009-08-19 14:39:00  meichel
- * Fixed static/extern linkage declaration
- *
- * Revision 1.14  2009-08-19 11:56:33  meichel
- * Function passed as 4th parameter to qsort() now declared extern "C",
- *   needed for Sun Studio 11 on Solaris.
- *
- * Revision 1.13  2009-08-05 14:55:13  meichel
- * Modified some output messages to make their meaning clearer.
- *
- * Revision 1.12  2008-04-30 12:38:43  meichel
- * Fixed compile errors due to changes in attribute tag names
- *
- * Revision 1.11  2008-04-15 15:43:37  meichel
- * Fixed endless recursion bug in the index file handling code when
- *   the index file does not exist
- *
- * Revision 1.10  2006/08/15 16:09:34  meichel
- * Updated the code in module dcmqrdb to correctly compile when
- *   all standard C++ classes remain in namespace std.
- *
- * Revision 1.9  2005/12/16 09:16:08  onken
- * - Added variable initialization to avoid compiler warning
- *
- * Revision 1.8  2005/12/14 14:29:43  joergr
- * Including ctype if present, needed for Solaris.
- *
- * Revision 1.7  2005/12/14 13:46:54  meichel
- * Changed order of include files to avoid warning on FreeBSD
- *
- * Revision 1.6  2005/12/08 15:47:09  meichel
- * Changed include path schema for all DCMTK header files
- *
- * Revision 1.5  2005/12/01 09:10:06  joergr
- * Fixed bug in method matchUID (formerly known as DB_MatchUID).
- *
- * Revision 1.4  2005/04/22 15:36:32  meichel
- * Passing calling aetitle to DcmQueryRetrieveDatabaseHandleFactory::createDBHandle
- *   to allow configuration retrieval based on calling aetitle.
- *
- * Revision 1.3  2005/04/04 14:23:21  meichel
- * Renamed application "dcmqrdb" into "dcmqrscp" to avoid name clash with
- *   dcmqrdb library, which confuses the MSVC build system.
- *
- * Revision 1.2  2005/04/04 10:04:47  meichel
- * Added public declarations for index file functions that are
- *   used from module dcmpstat
- *
- * Revision 1.1  2005/03/30 13:34:53  meichel
- * Initial release of module dcmqrdb that will replace module imagectn.
- *   It provides a clear interface between the Q/R DICOM front-end and the
- *   database back-end. The imagectn code has been re-factored into a minimal
- *   class structure.
- *
- *
- */

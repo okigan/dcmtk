@@ -13,9 +13,9 @@
  *
  *  Module:  dcmqrdb
  *
- *  Author:  Andrew Hewett, Marco Eichelberg
+ *  Author:  Andrew Hewett, Marco Eichelberg, Igor Okulist
  *
- *  Purpose: class DcmQueryRetrieveIndexDatabaseHandle
+ *  Purpose: class DcmQueryRetrieveSQLDatabaseHandle
  *
  *  Last Update:      $Author: joergr $
  *  Update Date:      $Date: 2010-10-14 13:16:41 $
@@ -26,8 +26,8 @@
  *
  */
 
-#ifndef DCMQRDBI_H
-#define DCMQRDBI_H
+#ifndef DCMQRDBQ_H
+#define DCMQRDBQ_H
 
 #include "dcmtk/config/osconfig.h"     /* make sure OS specific configuration is included first */
 #include "dcmtk/dcmqrdb/dcmqrdba.h"    /* for class DcmQueryRetrieveDatabaseHandle */
@@ -46,45 +46,7 @@ class DcmQueryRetrieveConfig;
 class IDbSystem;
 class IDbDatabase;
 
-#define DBINDEXFILE "index.dat"
 
-#ifndef _WIN32
-/* we lock image files on all platforms except Win32 where it does not work
- * due to the different semantics of LockFile/LockFileEx compared to flock.
- */
-#define LOCK_IMAGE_FILES
-#endif
-
-/** enumeration describing the levels of the DICOM Q/R information model
- */
-enum DB_LEVEL
-{
-  /// DICOM Q/R patient level
-  PATIENT_LEVEL,
-  /// DICOM Q/R study level
-  STUDY_LEVEL,
-  /// DICOM Q/R series level
-  SERIE_LEVEL,
-  /// DICOM Q/R instance level
-  IMAGE_LEVEL
-};
-
-/** This enum describes the status of one entry in the database hierarchy. An 
- *  entry can describe a study, a series or an instance. A study or series is 
- *  new exactly if all subobjects (series and instances) are new. A study or 
- *  series contains new subobjecs as long as any subobject (series or instance) 
- *  has the status objectIsNew. Instances can never have the status 
- *  DVIF_objectContainsNewSubobjects. 
- */
-enum DVIFhierarchyStatus
-{
-  /// object (study, series or instance) in the database is not new
-  DVIF_objectIsNotNew,
-  /// object (study, series or instance) in the database is new
-  DVIF_objectIsNew,
-  /// object (study or series) in the database is not new but contains new subobjects
-  DVIF_objectContainsNewSubobjects
-};
 
 /// upper limit for the number of studies per storage area
 #define DB_UpperMaxStudies              500
@@ -129,7 +91,10 @@ public:
    *  @param checkMove checking for C-MOVE parameters
    */
   void setIdentifierChecking(OFBool checkFind, OFBool checkMove);
-  
+
+  /** This is not applicable to the database, but need to change higher level 
+      interface to correct this (at a later point)
+  */
   /** create a filename under which a DICOM object that is currently
    *  being received through a C-STORE operation can be stored.
    *  @param SOPClassUID SOP class UID of DICOM instance
@@ -143,7 +108,7 @@ public:
       const char *SOPClassUID,
       const char *SOPInstanceUID,
       char *newImageFileName);
-  
+
   /** register the given DICOM object, which has been received through a C-STORE 
    *  operation and stored in a file, in the database.
    *  @param SOPClassUID SOP class UID of DICOM instance
@@ -380,8 +345,8 @@ private:
       DB_LEVEL        infLevel,
       DB_LEVEL        lowestLevel);
 #endif
-  /// database handle
-  DB_Private_Handle *handle_;
+  /// database handles
+  DB_Private_Handle *handle_; //TODO: remove 
   IDbSystem *piDbSystem_;
   IDbDatabase *piDbDatabase_;
 
@@ -401,7 +366,7 @@ private:
 };
 
 
-/** Index database factory class. Instances of this class are able to create database
+/** SQL database factory class. Instances of this class are able to create database
  *  handles for a given called application entity title.
  */
 class DcmQueryRetrieveSQLDatabaseHandleFactory: public DcmQueryRetrieveDatabaseHandleFactory
@@ -436,39 +401,3 @@ private:
 };
 
 #endif
-
-/*
- * CVS Log
- * $Log: dcmqrdbi.h,v $
- * Revision 1.8  2010-10-14 13:16:41  joergr
- * Updated copyright header. Added reference to COPYRIGHT file.
- *
- * Revision 1.7  2009-11-24 10:10:42  uli
- * Switched to logging mechanism provided by the "new" oflog module.
- *
- * Revision 1.6  2009-08-21 09:50:07  joergr
- * Replaced tabs by spaces and updated copyright date.
- *
- * Revision 1.5  2008-04-15 15:43:37  meichel
- * Fixed endless recursion bug in the index file handling code when
- *   the index file does not exist
- *
- * Revision 1.4  2005/12/08 16:04:22  meichel
- * Changed include path schema for all DCMTK header files
- *
- * Revision 1.3  2005/04/22 15:36:34  meichel
- * Passing calling aetitle to DcmQueryRetrieveDatabaseHandleFactory::createDBHandle
- *   to allow configuration retrieval based on calling aetitle.
- *
- * Revision 1.2  2005/04/04 10:04:45  meichel
- * Added public declarations for index file functions that are
- *   used from module dcmpstat
- *
- * Revision 1.1  2005/03/30 13:34:50  meichel
- * Initial release of module dcmqrdb that will replace module imagectn.
- *   It provides a clear interface between the Q/R DICOM front-end and the
- *   database back-end. The imagectn code has been re-factored into a minimal
- *   class structure.
- *
- *
- */

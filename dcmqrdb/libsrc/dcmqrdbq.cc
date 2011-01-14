@@ -58,7 +58,7 @@ END_EXTERN_C
 //TODO: move these of this file
 
 #include <atlbase.h>
-# include "dblib/dblib.h"
+#include "dblib/dblib.h"
 #endif
 
 
@@ -127,7 +127,7 @@ static const DB_FindAttr TbFindAttr [] = {
 static int NbFindAttr = ((sizeof (TbFindAttr)) / (sizeof (TbFindAttr [0])));
 
 /* ========================= static functions ========================= */
-
+//TODO: remove ?
 static char *DB_strdup(const char* str)
 {
     if (str == NULL) return NULL;
@@ -139,7 +139,7 @@ static char *DB_strdup(const char* str)
 /************
 **      Add UID in Index Record to the UID found list
  */
-
+//TODO: remove ?
 static void DB_UIDAddFound (
                 DB_Private_Handle       *phandle,
                 IdxRecord               *idxRec
@@ -174,7 +174,7 @@ static void DB_UIDAddFound (
 /************
 **      Search if an Index Record has already been found
  */
-
+//TODO: remove?
 static int DB_UIDAlreadyFound (
                 DB_Private_Handle       *phandle,
                 IdxRecord               *idxRec
@@ -568,7 +568,7 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::DB_unlock()
 /*******************
  *    Free an element List
  */
-
+//TODO: remove ?
 static OFCondition DB_FreeUidList (DB_UidList *lst)
 {
     if (lst == NULL) return EC_Normal;
@@ -590,7 +590,7 @@ static OFCondition DB_FreeUidList (DB_UidList *lst)
 /*******************
  *    Free a UID List
  */
-
+//TODO: remove?
 static OFCondition DB_FreeElementList (DB_ElementList *lst)
 {
     if (lst == NULL) return EC_Normal;
@@ -607,7 +607,7 @@ static OFCondition DB_FreeElementList (DB_ElementList *lst)
 /*******************
  *    Matches two strings
  */
-
+//TODO: remove?
 static int DB_StringUnify  (char *pmod, char *pstr)
 {
     int uni;
@@ -637,7 +637,7 @@ static int DB_StringUnify  (char *pmod, char *pstr)
 /*******************
  *    Is the specified tag supported
  */
-
+//TODO:remove?
 static int DB_TagSupported (DcmTagKey tag)
 {
     int i;
@@ -789,7 +789,7 @@ static void DB_RemoveEnclosingSpaces (char *string)
 /*******************
  *    Convert a date YYYYMMDD in a long
  */
-
+//TODO: remove?
 static long DB_DateToLong (char *date)
 {
     char year [5];
@@ -3277,6 +3277,8 @@ DcmQueryRetrieveSQLDatabaseHandle::DcmQueryRetrieveSQLDatabaseHandle(
         maxBytesPerStudy = DB_UpperMaxBytesPerStudy;
     }
 
+//TODO: remove
+#if 0
     if (handle_) {
         sprintf (handle_ -> storageArea,"%s", storageArea);
         sprintf (handle_ -> indexFilename,"%s%c%s", storageArea, PATH_SEPARATOR, DBINDEXFILE);
@@ -3318,7 +3320,6 @@ DcmQueryRetrieveSQLDatabaseHandle::DcmQueryRetrieveSQLDatabaseHandle(
         result = DcmQRSqlDatabaseError;
         return;
     }
-#if 0
 #endif
 }
 
@@ -3356,6 +3357,7 @@ DcmQueryRetrieveSQLDatabaseHandle::~DcmQueryRetrieveSQLDatabaseHandle()
 /**********************************
  *      Provides a storage filename
  */
+//TODO: This is not applicable for a database, but 
 
 OFCondition DcmQueryRetrieveSQLDatabaseHandle::makeNewStoreFileName(
                 const char      *SOPClassUID,
@@ -3379,6 +3381,7 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::makeNewStoreFileName(
   return EC_Normal;
 
 }
+
 
 #if 0
 OFCondition DcmQueryRetrieveSQLDatabaseHandle::instanceReviewed(int idx)

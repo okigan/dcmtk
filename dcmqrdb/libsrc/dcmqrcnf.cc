@@ -509,6 +509,8 @@ int DcmQueryRetrieveConfig::readAETable(FILE *cnffp, int *lineno)
       CNF_Config.AEEntries[noOfAEEntries - 1].Peers = parsePeers(&lineptr, &CNF_Config.AEEntries[noOfAEEntries - 1].noOfPeers);
       if (!CNF_Config.AEEntries[noOfAEEntries - 1].noOfPeers)
          error = 1;
+
+      CNF_Config.AEEntries[noOfAEEntries - 1].ConnectionString = parsevalues(&lineptr);
    }
 
    if (!end) {
@@ -841,6 +843,18 @@ const char *DcmQueryRetrieveConfig::getStorageArea(const char *AETitle) const
    for(i = 0; i < CNF_Config.noOfAEEntries; i++) {
       if (!strcmp(AETitle, CNF_Config.AEEntries[i].ApplicationTitle))
          return(CNF_Config.AEEntries[i].StorageArea);
+   }
+   return(NULL);        /* AETitle not found */
+}
+
+
+const char *DcmQueryRetrieveConfig::getConnectionString(const char *AETitle) const
+{
+   int  i;
+
+   for(i = 0; i < CNF_Config.noOfAEEntries; i++) {
+      if (!strcmp(AETitle, CNF_Config.AEEntries[i].ApplicationTitle))
+          return(CNF_Config.AEEntries[i].ConnectionString);
    }
    return(NULL);        /* AETitle not found */
 }

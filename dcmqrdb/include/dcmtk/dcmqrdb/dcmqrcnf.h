@@ -90,6 +90,9 @@ struct DcmQueryRetrieveConfigAEEntry
 
     /// array of peer entries describing remote SCP peers
     DcmQueryRetrieveConfigPeer *Peers;
+
+    /// connection string (if applicable)
+    const char *ConnectionString;
 };
 
 /** this class describes configuration settings for a list of storage areas
@@ -169,6 +172,13 @@ public:
    *  Return : Storage Area
    */
   const char *getStorageArea(const char *AETitle) const;
+
+  /*
+   *  get Connection String for AETitle
+   *  Input : AETitle
+   *  Return : Connection String
+   */
+  const char *getConnectionString(const char *AETitle) const;
 
   /*
    *  get Number of Maximal Studies

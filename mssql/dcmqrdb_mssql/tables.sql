@@ -12,16 +12,13 @@ GO
 USE [dcmqrdb_mssql]
 GO
 
-
 IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[tbInstance]') AND type in (N'U'))
 DROP TABLE [dbo].[tbInstance]
 GO
 
-
 IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[tbSeries]') AND type in (N'U'))
 DROP TABLE [dbo].[tbSeries]
 GO
-
 
 IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[tbStudy]') AND type in (N'U'))
 DROP TABLE [dbo].[tbStudy]
@@ -29,7 +26,6 @@ GO
 
 USE [dcmqrdb_mssql]
 GO
-
 
 SET ANSI_NULLS ON
 GO
@@ -52,7 +48,6 @@ GO
 USE [dcmqrdb_mssql]
 GO
 
-
 SET ANSI_NULLS ON
 GO
 
@@ -74,7 +69,6 @@ GO
 USE [dcmqrdb_mssql]
 GO
 
-
 SET ANSI_NULLS ON
 GO
 
@@ -84,6 +78,9 @@ GO
 CREATE TABLE [dbo].[tbStudy](
 	[StudyKey] [int] IDENTITY(1,1) NOT NULL,
 	[StudyUiid] [nvarchar](64) NOT NULL,
+	[StudySize] [bigint] NULL,
+	[LastUpdated] [datetime] NULL,
+	[InstanceNumber] [int] NULL,
  CONSTRAINT [PK_tbStudy] PRIMARY KEY CLUSTERED 
 (
 	[StudyKey] ASC

@@ -1,5 +1,5 @@
-﻿:r database.sql
-:r tables.sql
-:r views.sql
-:r procs.sql
-:r index.sql
+﻿:r 1-database.sql
+:r 2-tables.sql
+:r 3-views.sql
+:r 4-procs.sql
+:r 5-index.sql

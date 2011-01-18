@@ -1,6 +1,10 @@
 USE [dcmqrdb_mssql]
 GO
 
+IF  EXISTS (SELECT * FROM sys.foreign_keys WHERE object_id = OBJECT_ID(N'[dbo].[FK_tbAttribute_tbInstance]') AND parent_object_id = OBJECT_ID(N'[dbo].[tbAttribute]'))
+ALTER TABLE [dbo].[tbAttribute] DROP CONSTRAINT [FK_tbAttribute_tbInstance]
+GO
+
 IF  EXISTS (SELECT * FROM sys.foreign_keys WHERE object_id = OBJECT_ID(N'[dbo].[FK_tbInstance_tbSeries]') AND parent_object_id = OBJECT_ID(N'[dbo].[tbInstance]'))
 ALTER TABLE [dbo].[tbInstance] DROP CONSTRAINT [FK_tbInstance_tbSeries]
 GO
@@ -10,6 +14,10 @@ ALTER TABLE [dbo].[tbSeries] DROP CONSTRAINT [FK_tbSeries_tbStudy]
 GO
 
 USE [dcmqrdb_mssql]
+GO
+
+IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[tbAttribute]') AND type in (N'U'))
+DROP TABLE [dbo].[tbAttribute]
 GO
 
 IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[tbInstance]') AND type in (N'U'))
@@ -22,6 +30,29 @@ GO
 
 IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[tbStudy]') AND type in (N'U'))
 DROP TABLE [dbo].[tbStudy]
+GO
+
+USE [dcmqrdb_mssql]
+GO
+
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE TABLE [dbo].[tbAttribute](
+	[AttributeKey] [int] IDENTITY(1,1) NOT NULL,
+	[InstanceKey] [int] NOT NULL,
+	[DcmGroup] [int] NOT NULL,
+	[DcmElement] [int] NOT NULL,
+	[Value] [nvarchar](1024) NOT NULL,
+ CONSTRAINT [PK_tbAttribute] PRIMARY KEY CLUSTERED 
+(
+	[AttributeKey] ASC
+)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
+) ON [PRIMARY]
+
 GO
 
 USE [dcmqrdb_mssql]
@@ -87,6 +118,13 @@ CREATE TABLE [dbo].[tbStudy](
 )WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
 ) ON [PRIMARY]
 
+GO
+
+ALTER TABLE [dbo].[tbAttribute]  WITH CHECK ADD  CONSTRAINT [FK_tbAttribute_tbInstance] FOREIGN KEY([InstanceKey])
+REFERENCES [dbo].[tbInstance] ([InstanceKey])
+GO
+
+ALTER TABLE [dbo].[tbAttribute] CHECK CONSTRAINT [FK_tbAttribute_tbInstance]
 GO
 
 ALTER TABLE [dbo].[tbInstance]  WITH CHECK ADD  CONSTRAINT [FK_tbInstance_tbSeries] FOREIGN KEY([SeriesKey])

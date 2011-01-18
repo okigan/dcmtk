@@ -1,19 +1,20 @@
 USE [dcmqrdb_mssql]
 GO
 
-
 IF  EXISTS (SELECT * FROM sys.views WHERE object_id = OBJECT_ID(N'[dbo].[vwStudySeries]'))
 DROP VIEW [dbo].[vwStudySeries]
 GO
-
 
 IF  EXISTS (SELECT * FROM sys.views WHERE object_id = OBJECT_ID(N'[dbo].[vwStudySeriesIntance]'))
 DROP VIEW [dbo].[vwStudySeriesIntance]
 GO
 
-USE [dcmqrdb_mssql]
+IF  EXISTS (SELECT * FROM sys.views WHERE object_id = OBJECT_ID(N'[dbo].[vwAttributes]'))
+DROP VIEW [dbo].[vwAttributes]
 GO
 
+USE [dcmqrdb_mssql]
+GO
 
 SET ANSI_NULLS ON
 GO
@@ -21,13 +22,14 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
+
 CREATE VIEW [dbo].[vwStudySeries]
 AS
 SELECT dbo.tbStudy.StudyKey, dbo.tbStudy.StudyUiid, dbo.tbSeries.SeriesKey, dbo.tbSeries.SeriesUiid
 FROM  dbo.tbStudy FULL OUTER JOIN
                dbo.tbSeries ON dbo.tbStudy.StudyKey = dbo.tbSeries.StudyKey
-GO
 
+GO
 
 SET ANSI_NULLS ON
 GO
@@ -37,11 +39,24 @@ GO
 
 CREATE VIEW [dbo].[vwStudySeriesIntance]
 AS
-SELECT dbo.tbStudy.StudyUiid, dbo.tbSeries.SeriesUiid, dbo.tbInstance.InstanceUiid
-FROM  dbo.tbStudy FULL OUTER JOIN
-               dbo.tbSeries ON dbo.tbStudy.StudyKey = dbo.tbSeries.StudyKey FULL OUTER JOIN
-               dbo.tbInstance ON dbo.tbSeries.SeriesKey = dbo.tbInstance.SeriesKey
+SELECT     dbo.tbStudy.StudyKey, dbo.tbSeries.SeriesKey, dbo.tbInstance.InstanceKey, dbo.tbStudy.StudyUiid, dbo.tbInstance.InstanceUiid, dbo.tbSeries.SeriesUiid
+FROM         dbo.tbStudy FULL OUTER JOIN
+                      dbo.tbSeries ON dbo.tbStudy.StudyKey = dbo.tbSeries.StudyKey FULL OUTER JOIN
+                      dbo.tbInstance ON dbo.tbSeries.SeriesKey = dbo.tbInstance.SeriesKey
+
 GO
 
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE VIEW [dbo].[vwAttributes]
+AS
+SELECT     AttributeKey, InstanceKey, DcmGroup, DcmElement, Value
+FROM         dbo.tbAttribute
+
+GO
 
 

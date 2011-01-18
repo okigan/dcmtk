@@ -1,25 +1,27 @@
 USE [dcmqrdb_mssql]
 GO
 
-
 IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[spRegisterDcmInstance]') AND type in (N'P', N'PC'))
 DROP PROCEDURE [dbo].[spRegisterDcmInstance]
 GO
-
 
 IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[spRegisterDcmSeries]') AND type in (N'P', N'PC'))
 DROP PROCEDURE [dbo].[spRegisterDcmSeries]
 GO
 
-USE [dcmqrdb_mssql]
+IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[spRegisterDcmTag]') AND type in (N'P', N'PC'))
+DROP PROCEDURE [dbo].[spRegisterDcmTag]
 GO
 
+USE [dcmqrdb_mssql]
+GO
 
 SET ANSI_NULLS ON
 GO
 
 SET QUOTED_IDENTIFIER ON
 GO
+
 
 -- =============================================
 -- Author:		Igor Okulist
@@ -73,14 +75,15 @@ BEGIN
 		SET @instanceKey =  SCOPE_IDENTITY();
     END
 END
-GO
 
+GO
 
 SET ANSI_NULLS ON
 GO
 
 SET QUOTED_IDENTIFIER ON
 GO
+
 
 -- =============================================
 -- Author:		Igor Okulist
@@ -119,6 +122,45 @@ BEGIN
 		VALUES (@studyKey,@seriesUiid);
     END
 END
+
+GO
+
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+
+-- =============================================
+-- Author:		Igor Okulist
+-- Create date: 
+-- Description:	
+-- =============================================
+CREATE PROCEDURE [dbo].[spRegisterDcmTag] 
+	-- Add the parameters for the stored procedure here
+	  @studyUiid nvarchar(64)
+	, @instanceUiid nvarchar(64)
+	, @DcmGroup int
+	, @DcmElement int
+	, @attributeValue nvarchar(1024)
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+
+	DECLARE @InstanceKey INT;
+		
+    SET @InstanceKey = (SELECT InstanceKey FROM dbo.vwStudySeriesIntance WHERE StudyUiid = @studyUiid AND InstanceUiid = @instanceUiid)
+	
+	INSERT INTO dbo.tbAttribute (InstanceKey, DcmGroup, DcmElement, Value)
+	VALUES (@InstanceKey, @DcmGroup, @DcmElement, @attributeValue)
+END
+
+
+
 GO
 
 

@@ -2718,18 +2718,45 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::storeRequest (
     {
       BOOL bRes = FALSE;
 
+      //TODO: maybe should use Table Value Parameter (TVP) in MS SQL2008 
+      //but info to to scarce to find out how to actully use it
+      //http://msdn.microsoft.com/en-us/library/bb510489.aspx
+
       CAutoPtr<IDbCommand> pCmd(piDbSystem_->CreateCommand(piDbDatabase_));
       bRes = pCmd->Create(_T(
-        "EXEC [dcmqrdb_mssql].[dbo].[spRegisterDcmInstance]"
-        "  @studyUiid = ?"
-        ", @seriesUiid = ?"
-        ", @instanceUiid = ?;"
-        ));
+          "EXEC [dcmqrdb_mssql].[dbo].[spRegisterDcmInstance]"
+          "  @studyUiid = ?"
+          ", @seriesUiid = ?"
+          ", @instanceUiid = ?;"
+          ));
       bRes = pCmd->SetParam(0, CA2T((idxRec).StudyInstanceUID));
       bRes = pCmd->SetParam(1, CA2T((idxRec).SeriesInstanceUID));
       bRes = pCmd->SetParam(2, CA2T((idxRec).SOPInstanceUID));
       CAutoPtr<IDbRecordset> pRec(piDbSystem_->CreateRecordset(piDbDatabase_));
       bRes = pCmd->Execute(pRec);
+
+      //TODO: this seems screwed up, a remote call to sql server for 
+      //every tag!!??, but as noted above is is not clear how to TVP 
+      //and hard coding every tag in stored proc seems even more stupid
+      for(int i = 0; i < NBPARAMETERS; i++){
+          //TODO: check turn code
+          bRes = pCmd->Create(_T(
+              "EXEC [dcmqrdb_mssql].[dbo].[spRegisterDcmTag]"
+              "  @studyUiid = ?"
+              ", @instanceUiid = ?"
+              ", @DcmGroup =  ?"
+              ", @DcmElement =  ?"
+              ", @attributeValue = ?"
+              ));
+          bRes = pCmd->SetParam(0, CA2T((idxRec).StudyInstanceUID));
+          bRes = pCmd->SetParam(1, CA2T((idxRec).SOPInstanceUID));
+          long group   = idxRec.param[i].XTag.getGroup();
+          long element = idxRec.param[i].XTag.getElement();
+          bRes = pCmd->SetParam(2, &group);
+          bRes = pCmd->SetParam(3, &element);
+          bRes = pCmd->SetParam(4, CA2T(idxRec.param[i].PValueField));
+          bRes = pCmd->Execute(pRec);
+      }
 
       //TODO: check return status
       //TODO: have the stored procedure return the path for previously

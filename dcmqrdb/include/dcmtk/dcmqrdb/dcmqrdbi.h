@@ -66,22 +66,7 @@ enum DB_LEVEL
   IMAGE_LEVEL
 };
 
-/** This enum describes the status of one entry in the database hierarchy. An 
- *  entry can describe a study, a series or an instance. A study or series is 
- *  new exactly if all subobjects (series and instances) are new. A study or 
- *  series contains new subobjecs as long as any subobject (series or instance) 
- *  has the status objectIsNew. Instances can never have the status 
- *  DVIF_objectContainsNewSubobjects. 
- */
-enum DVIFhierarchyStatus
-{
-  /// object (study, series or instance) in the database is not new
-  DVIF_objectIsNotNew,
-  /// object (study, series or instance) in the database is new
-  DVIF_objectIsNew,
-  /// object (study or series) in the database is not new but contains new subobjects
-  DVIF_objectContainsNewSubobjects
-};
+
 
 /// upper limit for the number of studies per storage area
 #define DB_UpperMaxStudies              500

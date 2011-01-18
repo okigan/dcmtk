@@ -13,6 +13,10 @@ IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[spReg
 DROP PROCEDURE [dbo].[spRegisterDcmTag]
 GO
 
+IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[TVPTest]') AND type in (N'P', N'PC'))
+DROP PROCEDURE [dbo].[TVPTest]
+GO
+
 USE [dcmqrdb_mssql]
 GO
 
@@ -33,11 +37,19 @@ CREATE PROCEDURE [dbo].[spRegisterDcmInstance]
 	  @studyUiid nvarchar(64)
 	, @seriesUiid nvarchar(64)
 	, @instanceUiid nvarchar(64)
+	, @fileName nvarchar(1024)
 AS
 BEGIN
 	-- SET NOCOUNT ON added to prevent extra result sets from
 	-- interfering with SELECT statements.
 	SET NOCOUNT ON;
+
+    DECLARE @fileKey INT;
+
+    INSERT INTO dbo.tbFile (FilePath)
+    VALUES (@fileName)
+    
+    SET @fileKey = SCOPE_IDENTITY();
 	
 	DECLARE @studyKey INT;
 		
@@ -69,11 +81,12 @@ BEGIN
 	
 	IF @instanceKey IS NULL
 	BEGIN
-		INSERT INTO dbo.tbInstance (SeriesKey, InstanceUiid)
-		VALUES (@seriesKey,@instanceUiid);
+		INSERT INTO dbo.tbInstance (SeriesKey, InstanceUiid, FileKey)
+		VALUES (@seriesKey,@instanceUiid, @FileKey);
 		
 		SET @instanceKey =  SCOPE_IDENTITY();
     END
+    
 END
 
 GO
@@ -160,6 +173,30 @@ BEGIN
 END
 
 
+
+GO
+
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+-- =============================================
+-- Author:		Igor Okulist
+-- Create date: 
+-- Description:	
+-- =============================================
+CREATE PROCEDURE [dbo].[TVPTest] 
+	-- Add the parameters for the stored procedure here
+	@t myTVP READONLY
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+END
 
 GO
 

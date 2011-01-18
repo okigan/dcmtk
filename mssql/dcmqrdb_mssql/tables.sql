@@ -5,6 +5,10 @@ IF  EXISTS (SELECT * FROM sys.foreign_keys WHERE object_id = OBJECT_ID(N'[dbo].[
 ALTER TABLE [dbo].[tbAttribute] DROP CONSTRAINT [FK_tbAttribute_tbInstance]
 GO
 
+IF  EXISTS (SELECT * FROM sys.foreign_keys WHERE object_id = OBJECT_ID(N'[dbo].[FK_tbInstance_tbFile]') AND parent_object_id = OBJECT_ID(N'[dbo].[tbInstance]'))
+ALTER TABLE [dbo].[tbInstance] DROP CONSTRAINT [FK_tbInstance_tbFile]
+GO
+
 IF  EXISTS (SELECT * FROM sys.foreign_keys WHERE object_id = OBJECT_ID(N'[dbo].[FK_tbInstance_tbSeries]') AND parent_object_id = OBJECT_ID(N'[dbo].[tbInstance]'))
 ALTER TABLE [dbo].[tbInstance] DROP CONSTRAINT [FK_tbInstance_tbSeries]
 GO
@@ -18,6 +22,10 @@ GO
 
 IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[tbAttribute]') AND type in (N'U'))
 DROP TABLE [dbo].[tbAttribute]
+GO
+
+IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[tbFile]') AND type in (N'U'))
+DROP TABLE [dbo].[tbFile]
 GO
 
 IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[tbInstance]') AND type in (N'U'))
@@ -64,10 +72,31 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
+CREATE TABLE [dbo].[tbFile](
+	[FileKey] [int] IDENTITY(1,1) NOT NULL,
+	[FilePath] [nchar](1024) NULL,
+ CONSTRAINT [PK_tbFile] PRIMARY KEY CLUSTERED 
+(
+	[FileKey] ASC
+)WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
+) ON [PRIMARY]
+
+GO
+
+USE [dcmqrdb_mssql]
+GO
+
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
 CREATE TABLE [dbo].[tbInstance](
 	[InstanceKey] [int] IDENTITY(1,1) NOT NULL,
 	[SeriesKey] [int] NOT NULL,
 	[InstanceUiid] [nvarchar](64) NOT NULL,
+	[FileKey] [int] NULL,
  CONSTRAINT [PK_tbInstance] PRIMARY KEY CLUSTERED 
 (
 	[InstanceKey] ASC
@@ -122,9 +151,17 @@ GO
 
 ALTER TABLE [dbo].[tbAttribute]  WITH CHECK ADD  CONSTRAINT [FK_tbAttribute_tbInstance] FOREIGN KEY([InstanceKey])
 REFERENCES [dbo].[tbInstance] ([InstanceKey])
+ON DELETE CASCADE
 GO
 
 ALTER TABLE [dbo].[tbAttribute] CHECK CONSTRAINT [FK_tbAttribute_tbInstance]
+GO
+
+ALTER TABLE [dbo].[tbInstance]  WITH CHECK ADD  CONSTRAINT [FK_tbInstance_tbFile] FOREIGN KEY([FileKey])
+REFERENCES [dbo].[tbFile] ([FileKey])
+GO
+
+ALTER TABLE [dbo].[tbInstance] CHECK CONSTRAINT [FK_tbInstance_tbFile]
 GO
 
 ALTER TABLE [dbo].[tbInstance]  WITH CHECK ADD  CONSTRAINT [FK_tbInstance_tbSeries] FOREIGN KEY([SeriesKey])

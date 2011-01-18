@@ -35,7 +35,7 @@
 #include "dcmtk/dcmdata/dcdatset.h"
 #include "dcmtk/dcmdata/dcuid.h"
 #include "dcmtk/dcmdata/dcdeftag.h"
-#include "dcmtk/dcmqrdb/dcmqrdbi.h"
+//#include "dcmtk/dcmqrdb/dcmqrdbi.h"
 
 BEGIN_EXTERN_C
 #ifdef HAVE_IO_H
@@ -44,6 +44,25 @@ BEGIN_EXTERN_C
 #undef access
 #endif
 END_EXTERN_C
+
+
+
+/** This enum describes the status of one entry in the database hierarchy. An 
+ *  entry can describe a study, a series or an instance. A study or series is 
+ *  new exactly if all subobjects (series and instances) are new. A study or 
+ *  series contains new subobjecs as long as any subobject (series or instance) 
+ *  has the status objectIsNew. Instances can never have the status 
+ *  DVIF_objectContainsNewSubobjects. 
+ */
+enum DVIFhierarchyStatus
+{
+  /// object (study, series or instance) in the database is not new
+  DVIF_objectIsNotNew,
+  /// object (study, series or instance) in the database is new
+  DVIF_objectIsNew,
+  /// object (study or series) in the database is not new but contains new subobjects
+  DVIF_objectContainsNewSubobjects
+};
 
 /** types of query keys
  */

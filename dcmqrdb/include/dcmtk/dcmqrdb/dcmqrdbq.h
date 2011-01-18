@@ -49,6 +49,19 @@ class IDbDatabase;
 //TODO: move this (and other to a common area with index db)
 #define DBC_MAXSTRING           256
 
+/** enumeration describing the levels of the DICOM Q/R information model
+ */
+enum DB_LEVEL
+{
+  /// DICOM Q/R patient level
+  PATIENT_LEVEL,
+  /// DICOM Q/R study level
+  STUDY_LEVEL,
+  /// DICOM Q/R series level
+  SERIE_LEVEL,
+  /// DICOM Q/R instance level
+  IMAGE_LEVEL
+};
 
 /// upper limit for the number of studies per storage area
 #define DB_UpperMaxStudies              500
@@ -327,7 +340,7 @@ private:
   int matchStudyUIDInStudyDesc (StudyDescRecord *pStudyDesc, char *StudyUID, int maxStudiesAllowed);
   OFCondition checkupinStudyDesc(StudyDescRecord *pStudyDesc, char *StudyUID, long imageSize);
 
-
+#endif 
   OFCondition hierarchicalCompare (
       DB_Private_Handle *phandle,
       IdxRecord         *idxRec,
@@ -335,12 +348,14 @@ private:
       DB_LEVEL          infLevel,
       int               *match);
 
+#if 1
   OFCondition testFindRequestList (
       DB_ElementList  *findRequestList,
       DB_LEVEL        queryLevel,
       DB_LEVEL        infLevel,
       DB_LEVEL        lowestLevel);
-
+#endif
+#if 0
   OFCondition testMoveRequestList (
       DB_ElementList  *findRequestList,
       DB_LEVEL        queryLevel,

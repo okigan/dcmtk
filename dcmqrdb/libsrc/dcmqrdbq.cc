@@ -396,7 +396,7 @@ static int DB_TagSupported (DcmTagKey tag)
 
 }
 
-#if 0
+#if 1
 /*******************
  *    Get UID tag of a specified level
  */
@@ -405,23 +405,25 @@ static OFCondition DB_GetUIDTag (DB_LEVEL level, DcmTagKey *tag)
 {
     int i;
 
-    for (i = 0; i < NbFindAttr; i++)
-    if ((TbFindAttr[i]. level == level) && (TbFindAttr[i]. keyAttr == UNIQUE_KEY))
-        break;
+    for (i = 0; i < NbFindAttr; i++){
+        if ((TbFindAttr[i]. level == level) && (TbFindAttr[i]. keyAttr == UNIQUE_KEY))
+            break;
+    }
 
     if (i < NbFindAttr) {
         *tag = TbFindAttr[i].tag;
         return (EC_Normal);
     }
-    else
-    return (DcmQRIndexDatabaseError);
+    else{
+        return (DcmQRSqlDatabaseError);
+    }
 
 }
-
+#endif 
 /*******************
  *    Get tag level of a specified tag
  */
-
+#if 1
 static OFCondition DB_GetTagLevel (DcmTagKey tag, DB_LEVEL *level)
 {
     int i;
@@ -435,7 +437,7 @@ static OFCondition DB_GetTagLevel (DcmTagKey tag, DB_LEVEL *level)
         return (EC_Normal);
     }
     else
-    return (DcmQRIndexDatabaseError);
+    return (DcmQRSqlDatabaseError);
 }
 
 /*******************
@@ -455,7 +457,7 @@ static OFCondition DB_GetTagKeyAttr (DcmTagKey tag, DB_KEY_TYPE *keyAttr)
         return (EC_Normal);
     }
     else
-    return (DcmQRIndexDatabaseError);
+    return (DcmQRSqlDatabaseError);
 }
 
 /*******************
@@ -475,7 +477,7 @@ static OFCondition DB_GetTagKeyClass (DcmTagKey tag, DB_KEY_CLASS *keyAttr)
         return (EC_Normal);
     }
     else
-    return (DcmQRIndexDatabaseError);
+    return (DcmQRSqlDatabaseError);
 }
 
 
@@ -602,9 +604,9 @@ static double DB_TimeToDouble (char *thetime)
 
     return result;
 }
+#endif
 
-
-
+#if 1
 /***********************
  *    Duplicate a dicom element
  *    dst space is supposed provided by the caller
@@ -631,7 +633,8 @@ static void DB_DuplicateElement (DB_SmallDcmElmt *src, DB_SmallDcmElmt *dst)
 }
 #endif
 
-#if 0
+#if 1
+
 /* ========================= FIND ========================= */
 
 /************
@@ -640,7 +643,7 @@ static void DB_DuplicateElement (DB_SmallDcmElmt *src, DB_SmallDcmElmt *dst)
 **      Returns OFTrue if matching is ok, else returns OFFalse
  */
 
-int DcmQueryRetrieveSQLDatabaseHandle::matchDate (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt)
+static int matchDate (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt)
 {
     char date [DBC_MAXSTRING] ;
     char modl [DBC_MAXSTRING] ;
@@ -696,7 +699,7 @@ int DcmQueryRetrieveSQLDatabaseHandle::matchDate (DB_SmallDcmElmt *mod, DB_Small
 **      Returns OFTrue if matching is ok, else returns OFFalse
  */
 
-int DcmQueryRetrieveSQLDatabaseHandle::matchTime (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt)
+static int matchTime (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt)
 {
     char aTime [DBC_MAXSTRING] ;
     char modl [DBC_MAXSTRING] ;
@@ -752,7 +755,7 @@ int DcmQueryRetrieveSQLDatabaseHandle::matchTime (DB_SmallDcmElmt *mod, DB_Small
 **      Returns OFTrue if matching is ok, else returns OFFalse
  */
 
-int DcmQueryRetrieveSQLDatabaseHandle::matchUID (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt)
+static int matchUID (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt)
 {
     int match ;
     char *uid ;
@@ -836,7 +839,7 @@ int DcmQueryRetrieveSQLDatabaseHandle::matchUID (DB_SmallDcmElmt *mod, DB_SmallD
 **      Returns OFTrue if matching is ok, else returns OFFalse
  */
 
-int DcmQueryRetrieveSQLDatabaseHandle::matchStrings (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt)
+static int matchStrings (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt)
 {
     int match ;
     char *string ;
@@ -892,21 +895,25 @@ int DcmQueryRetrieveSQLDatabaseHandle::matchStrings (DB_SmallDcmElmt *mod, DB_Sm
 **      Returns OFTrue if matching is ok, else returns OFFalse
  */
 
-int DcmQueryRetrieveSQLDatabaseHandle::matchOther (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt)
+static int matchOther (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt)
 {
     if (mod->ValueLength != elt->ValueLength)
         return OFFalse ;
 
     return (memcmp (mod->PValueField, elt->PValueField, (size_t)(elt->ValueLength)) == 0) ;
 }
+#endif
 
+//TODO: move all of the above match* methods to a common util
+
+#if 1
 /************
 **      Try to match Two DB_SmallDcmElmts
 **      The first one is the "model", the second one an element
 **      Returns OFTrue if matching is ok, else returns OFFalse
  */
 
-int DcmQueryRetrieveSQLDatabaseHandle::dbmatch (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt)
+static int dbmatch (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt)
 {
     DB_KEY_CLASS keyClass = OTHER_CLASS;
 
@@ -1002,12 +1009,12 @@ void DcmQueryRetrieveSQLDatabaseHandle::makeResponseList (
 
     }
 }
+#endif
 
-
-
+#if 1
 /************
 **      Test a Find Request List
-**      Returns EC_Normal if ok, else returns DcmQRIndexDatabaseError
+**      Returns EC_Normal if ok, else returns DcmQRSqlDatabaseError
  */
 
 OFCondition DcmQueryRetrieveSQLDatabaseHandle::testFindRequestList (
@@ -1027,12 +1034,12 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::testFindRequestList (
 
     if (queryLevel < infLevel) {
         DCMQRDB_INFO("Level incompatible with Information Model (level " << queryLevel << ")");
-        return DcmQRIndexDatabaseError ;
+        return DcmQRSqlDatabaseError ;
     }
 
     if (queryLevel > lowestLevel) {
         DCMQRDB_DEBUG("Level incompatible with Information Model (level " << queryLevel << ")");
-        return DcmQRIndexDatabaseError ;
+        return DcmQRSqlDatabaseError ;
     }
 
     for (level = PATIENT_LEVEL ; level <= IMAGE_LEVEL ; level++) {
@@ -1056,7 +1063,7 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::testFindRequestList (
             }
             if (atLeastOneKeyFound && (queryLevel != STUDY_LEVEL)) {
                 DCMQRDB_DEBUG("Key found in Study Root Information Model (level " << level << ")");
-                return DcmQRIndexDatabaseError ;
+                return DcmQRSqlDatabaseError ;
             }
         }
 
@@ -1079,11 +1086,11 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::testFindRequestList (
                 DB_GetTagKeyAttr (plist->elem. XTag, &XTagType) ;
                 if (XTagType != UNIQUE_KEY) {
                     DCMQRDB_DEBUG("Non Unique Key found (level " << level << ")");
-                    return DcmQRIndexDatabaseError ;
+                    return DcmQRSqlDatabaseError ;
                 }
                 else if (uniqueKeyFound) {
                     DCMQRDB_DEBUG("More than one Unique Key found (level " << level << ")");
-                    return DcmQRIndexDatabaseError ;
+                    return DcmQRSqlDatabaseError ;
                 }
                 else
                     uniqueKeyFound = OFTrue ;
@@ -1110,7 +1117,7 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::testFindRequestList (
             }
             if (! atLeastOneKeyFound) {
                 DCMQRDB_DEBUG("No Key found at query level (level " << level << ")");
-                return DcmQRIndexDatabaseError ;
+                return DcmQRSqlDatabaseError ;
             }
         }
 
@@ -1134,15 +1141,16 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::testFindRequestList (
             }
             if (atLeastOneKeyFound) {
                 DCMQRDB_DEBUG("Key found beyond query level (level " << level << ")");
-                return DcmQRIndexDatabaseError ;
+                return DcmQRSqlDatabaseError ;
             }
         }
 
     }
     return EC_Normal ;
 }
+#endif
 
-
+#if 1
 /************
 **      Hierarchical Search Algorithm
 **      Returns OFTrue if matching is ok, else returns OFFalse
@@ -1165,93 +1173,72 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::hierarchicalCompare (
 
     if (level < phandle->queryLevel) {
 
-        /** Get UID Tag for current level
-         */
-
+        /** Get UID Tag for current level */
         DB_GetUIDTag (level, &XTag) ;
 
-        /** Find Element with this XTag in Identifier list
-         */
-
-        for (plist = phandle->findRequestList ; plist ; plist = plist->next)
-            if (plist->elem. XTag == XTag)
+        /** Find Element with this XTag in Identifier list*/
+        for (plist = phandle->findRequestList ; plist ; plist = plist->next){
+            if (plist->elem.XTag == XTag)
                 break ;
+        }
 
-        /** Element not found
-         */
-
+        /** Element not found */
         if (plist == NULL) {
             *match = OFFalse ;
             DCMQRDB_WARN("hierarchicalCompare : No UID Key found at level " << (int) level);
-            return DcmQRIndexDatabaseError ;
+            return DcmQRSqlDatabaseError ;
         }
 
-        /** Find element with the same XTag in index record
-         */
-
-        for (i = 0 ; i < NBPARAMETERS ; i++)
-            if (idxRec->param [i]. XTag == XTag)
+        /** Find element with the same XTag in index record */
+        for (i = 0 ; i < NBPARAMETERS ; i++){
+            if (idxRec->param[i]. XTag == XTag)
                 break ;
+        }
 
-        /** Compare with Single value matching
-        ** If Match fails, return OFFalse
-        */
-
+        /** Compare with Single value matching. If Match fails, return OFFalse */
         if (! dbmatch (&(plist->elem), &idxRec->param[i])) {
             *match = OFFalse ;
             return EC_Normal ;
         }
 
-        /** Match succeeded.
-        ** Try at next level
-        */
+        /** Match succeeded. Try at next level */
 
         return hierarchicalCompare (phandle, idxRec, (DB_LEVEL)(level + 1), infLevel, match) ;
     }
-
-    /**** If current level is the QueryLevel
-    ***/
-
+    /**** If current level is the QueryLevel ***/
     else if (level == phandle->queryLevel) {
 
-        /*** For each element in Identifier list
-        **/
-
+        /*** For each element in Identifier list **/
         for (plist = phandle->findRequestList ; plist ; plist = plist->next) {
 
-            /** Get the Tag level of this element
-             */
+            /** Get the Tag level of this element*/
 
             DB_GetTagLevel (plist->elem. XTag, &XTagLevel) ;
 
             /** If we are in the Study Root Information Model exception
             ** we must accept patients keys at the study level
             */
-
             if (  (XTagLevel == PATIENT_LEVEL)
                   && (phandle->queryLevel == STUDY_LEVEL)
                   && (infLevel == STUDY_LEVEL)
-                ) ;
+                )
+                ;
 
             /** In other cases, only keys at the current level are
             ** taken into account. So skip this element.
             */
-
             else if (XTagLevel != level)
                 continue ;
 
             /** Find element with the same XTag in index record
              */
 
-            for (i = 0 ; i < NBPARAMETERS ; i++)
+            for (i = 0 ; i < NBPARAMETERS ; i++){
                 if (idxRec->param [i]. XTag == plist->elem. XTag)
                     break ;
+            }
 
-            /** Compare with appropriate Matching.
-            ** If Match fails, return OFFalse
-            */
-
-
+            /** Compare with appropriate Matching. If Match fails, return OFFalse */
             if (! dbmatch (&(plist->elem), &idxRec->param[i])) {
                 *match = OFFalse ;
                 return EC_Normal ;
@@ -1266,55 +1253,24 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::hierarchicalCompare (
         return EC_Normal ;
 
     }
-    return DcmQRIndexDatabaseError;
+    return DcmQRSqlDatabaseError;
 }
 #endif
 /********************
 **      Start find in Database
 **/
 
-OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
-                const char      *SOPClassUID,
-                DcmDataset      *findRequestIdentifiers,
-                DcmQueryRetrieveDatabaseStatus  *status)
+OFCondition startFindRequestExtracted(
+                                      DcmDataset *findRequestIdentifiers
+                                      , DcmQueryRetrieveDatabaseStatus *status
+                                      , DB_ElementList*& plist
+                                      , DB_ElementList*& last
+                                      , bool& qrLevelFound
+                                      , DB_LEVEL& queryLevel
+                                      , DB_ElementList *findRequestList)
 {
-  return EC_MemoryExhausted;
-#if 0
-    DB_SmallDcmElmt     elem ;
-    DB_ElementList      *plist = NULL;
-    DB_ElementList      *last = NULL;
-    int                 MatchFound ;
-    IdxRecord           idxRec ;
-    DB_LEVEL            qLevel = PATIENT_LEVEL; // highest legal level for a query in the current model
-    DB_LEVEL            lLevel = IMAGE_LEVEL;   // lowest legal level for a query in the current model
-
-    OFCondition         cond = EC_Normal;
-    OFBool qrLevelFound = OFFalse;
-
-    /**** Is SOPClassUID supported ?
-    ***/
-
-    if (strcmp( SOPClassUID, UID_FINDPatientRootQueryRetrieveInformationModel) == 0)
-        handle_->rootLevel = PATIENT_ROOT ;
-    else if (strcmp( SOPClassUID, UID_FINDStudyRootQueryRetrieveInformationModel) == 0)
-        handle_->rootLevel = STUDY_ROOT ;
-#ifndef NO_PATIENTSTUDYONLY_SUPPORT
-    else if (strcmp( SOPClassUID, UID_RETIRED_FINDPatientStudyOnlyQueryRetrieveInformationModel) == 0)
-        handle_->rootLevel = PATIENT_STUDY ;
-#endif
-    else {
-        status->setStatus(STATUS_FIND_Refused_SOPClassNotSupported);
-        return (DcmQRIndexDatabaseError) ;
-    }
-
-
-    /**** Parse Identifiers in the Dicom Object
-    **** Find Query Level and contruct a list
-    **** of query identifiers
-    ***/
-
-    handle_->findRequestList = NULL ;
-
+    DB_SmallDcmElmt elem;
+    
     int elemCount = (int)(findRequestIdentifiers->card());
     for (int elemIndex=0; elemIndex<elemCount; elemIndex++) {
 
@@ -1327,7 +1283,7 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
                 elem.PValueField = NULL ;
             } else if ((elem.PValueField = (char*)malloc((size_t)(elem.ValueLength+1))) == NULL) {
                 status->setStatus(STATUS_FIND_Refused_OutOfResources);
-                return (DcmQRIndexDatabaseError) ;
+                return (DcmQRSqlDatabaseError) ;
             } else {
                 /* only char string type tags are supported at the moment */
                 char *s = NULL;
@@ -1335,14 +1291,14 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
                 strcpy(elem.PValueField, s);
             }
             /** If element is the Query Level, store it in handle
-             */
+            */
 
-            if (elem. XTag == DCM_QueryRetrieveLevel) {
+            if (elem.XTag == DCM_QueryRetrieveLevel) {
                 char *pc ;
                 char level [50] ;
 
                 strncpy(level, (char*)elem.PValueField,
-                        (elem.ValueLength<50)? (size_t)(elem.ValueLength) : 49) ;
+                    (elem.ValueLength<50)? (size_t)(elem.ValueLength) : 49) ;
 
                 /*** Skip this two lines if you want strict comparison
                 **/
@@ -1350,43 +1306,37 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
                 for (pc = level ; *pc ; pc++)
                     *pc = ((*pc >= 'a') && (*pc <= 'z')) ? 'A' - 'a' + *pc : *pc ;
 
-                if (strncmp (level, PATIENT_LEVEL_STRING,
-                             strlen (PATIENT_LEVEL_STRING)) == 0)
-                    handle_->queryLevel = PATIENT_LEVEL ;
-                else if (strncmp (level, STUDY_LEVEL_STRING,
-                                  strlen (STUDY_LEVEL_STRING)) == 0)
-                    handle_->queryLevel = STUDY_LEVEL ;
-                else if (strncmp (level, SERIE_LEVEL_STRING,
-                                  strlen (SERIE_LEVEL_STRING)) == 0)
-                    handle_->queryLevel = SERIE_LEVEL ;
-                else if (strncmp (level, IMAGE_LEVEL_STRING,
-                                  strlen (IMAGE_LEVEL_STRING)) == 0)
-                    handle_->queryLevel = IMAGE_LEVEL ;
-                else {
-                    if (elem. PValueField)
-                        free (elem. PValueField) ;
+                if (strncmp(level, PATIENT_LEVEL_STRING, strlen(PATIENT_LEVEL_STRING)) == 0){
+                    queryLevel = PATIENT_LEVEL ;
+                }else if (strncmp(level, STUDY_LEVEL_STRING, strlen(STUDY_LEVEL_STRING)) == 0){
+                    queryLevel = STUDY_LEVEL ;
+                }else if (strncmp(level, SERIE_LEVEL_STRING, strlen(SERIE_LEVEL_STRING)) == 0){
+                    queryLevel = SERIE_LEVEL ;
+                }else if (strncmp(level, IMAGE_LEVEL_STRING, strlen(IMAGE_LEVEL_STRING)) == 0){
+                    queryLevel = IMAGE_LEVEL ;
+                }else {
+                    if (elem.PValueField)
+                        free(elem.PValueField) ;
 #ifdef DEBUG
                     DCMQRDB_DEBUG("DB_startFindRequest () : Illegal query level (" << level << ")");
 #endif
                     status->setStatus(STATUS_FIND_Failed_UnableToProcess);
-                    return (DcmQRIndexDatabaseError) ;
+                    return (DcmQRSqlDatabaseError) ;
                 }
                 qrLevelFound = OFTrue;
             } else {
-                /** Else it is a query identifier.
-                ** Append it to our RequestList if it is supported
+                /** Else it is a query identifier. Append it to our RequestList if it is supported
                 */
                 if (DB_TagSupported (elem. XTag)) {
-
                     plist = (DB_ElementList *) malloc (sizeof (DB_ElementList)) ;
                     if (plist == NULL) {
                         status->setStatus(STATUS_FIND_Refused_OutOfResources);
-                        return (DcmQRIndexDatabaseError) ;
+                        return (DcmQRSqlDatabaseError) ;
                     }
                     plist->next = NULL ;
                     DB_DuplicateElement (&elem, &(plist->elem)) ;
-                    if (handle_->findRequestList == NULL) {
-                        handle_->findRequestList = last = plist ;
+                    if (findRequestList == NULL) {
+                        findRequestList = last = plist ;
                     } else {
                         last->next = plist ;
                         last = plist ;
@@ -1394,11 +1344,55 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
                 }
             }
 
-            if ( elem. PValueField ) {
-                free (elem. PValueField) ;
+            if (elem.PValueField ) {
+                free(elem.PValueField) ;
             }
         }
     }
+
+    return EC_Normal;
+}
+
+OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
+                const char      *SOPClassUID,
+                DcmDataset      *findRequestIdentifiers,
+                DcmQueryRetrieveDatabaseStatus  *status)
+{
+#if 1
+    //DB_SmallDcmElmt     elem ;
+    OFCondition cond = EC_Normal;
+    OFBool      qrLevelFound = OFFalse;
+    DB_QUERY_CLASS rootLevel = PATIENT_ROOT;
+
+    /**** Is SOPClassUID supported ? ***/
+
+    if (strcmp( SOPClassUID, UID_FINDPatientRootQueryRetrieveInformationModel) == 0){
+        rootLevel = PATIENT_ROOT ;
+    }else if (strcmp( SOPClassUID, UID_FINDStudyRootQueryRetrieveInformationModel) == 0){
+        rootLevel = STUDY_ROOT ;
+#ifndef NO_PATIENTSTUDYONLY_SUPPORT
+    }else if (strcmp( SOPClassUID, UID_RETIRED_FINDPatientStudyOnlyQueryRetrieveInformationModel) == 0){
+        rootLevel = PATIENT_STUDY ;
+#endif
+    }else {
+        status->setStatus(STATUS_FIND_Refused_SOPClassNotSupported);
+        return (DcmQRSqlDatabaseError) ;
+    }
+
+
+    /**** Parse Identifiers in the Dicom Object
+    **** Find Query Level and contruct a list
+    **** of query identifiers
+    ***/
+
+    DB_ElementList  *findRequestList = NULL ;
+    DB_LEVEL        queryLevel;
+    DB_ElementList  *plist = NULL;
+    DB_ElementList  *last = NULL;
+
+    cond = startFindRequestExtracted(findRequestIdentifiers, status, plist, last, qrLevelFound, queryLevel, findRequestList);
+    if (EC_Normal != cond)
+        return cond;
 
     if (!qrLevelFound) {
         /* The Query/Retrieve Level is missing */
@@ -1407,10 +1401,13 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
         handle_->idxCounter = -1 ;
         DB_FreeElementList (handle_->findRequestList) ;
         handle_->findRequestList = NULL ;
-        return (DcmQRIndexDatabaseError) ;
+        return (DcmQRSqlDatabaseError) ;
     }
 
-    switch (handle_->rootLevel)
+    DB_LEVEL            qLevel = PATIENT_LEVEL; // highest legal level for a query in the current model
+    DB_LEVEL            lLevel = IMAGE_LEVEL;   // lowest legal level for a query in the current model
+
+    switch (rootLevel)
     {
       case PATIENT_ROOT :
         qLevel = PATIENT_LEVEL ;
@@ -1428,9 +1425,10 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
 
     /**** Test the consistency of the request list
     ***/
+#endif
 
     if (doCheckFindIdentifier) {
-        cond = testFindRequestList (handle_->findRequestList, handle_->queryLevel, qLevel, lLevel) ;
+        cond = testFindRequestList (findRequestList, queryLevel, qLevel, lLevel) ;
         if (cond != EC_Normal) {
             handle_->idxCounter = -1 ;
             DB_FreeElementList (handle_->findRequestList) ;
@@ -1442,16 +1440,18 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
             return (cond) ;
         }
     }
-
+#if 0
     /**** Goto the beginning of Index File
     **** Then find the first matching image
     ***/
 
-    DB_lock(OFFalse);
+    //DB_lock(OFFalse);
 
-    DB_IdxInitLoop (&(handle_->idxCounter)) ;
-    MatchFound = OFFalse ;
+    //DB_IdxInitLoop (&(handle_->idxCounter)) ;
+    int MatchFound = OFFalse ;
     cond = EC_Normal ;
+
+    IdxRecord idxRec ;
 
     while (1) {
 
@@ -1484,7 +1484,7 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
 #endif
         status->setStatus(STATUS_FIND_Failed_UnableToProcess);
 
-        DB_unlock();
+        //DB_unlock();
 
         return (cond) ;
     }
@@ -1520,11 +1520,13 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
 #endif
         status->setStatus(STATUS_Success);
 
-        DB_unlock();
+        //DB_unlock();
 
         return (EC_Normal) ;
     }
 #endif
+
+    return EC_MemoryExhausted;
 }
 
 /********************
@@ -2727,17 +2729,22 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::storeRequest (
           "EXEC [dcmqrdb_mssql].[dbo].[spRegisterDcmInstance]"
           "  @studyUiid = ?"
           ", @seriesUiid = ?"
-          ", @instanceUiid = ?;"
+          ", @instanceUiid = ?"
+          ", @fileName = ?"
+          ";"
           ));
-      bRes = pCmd->SetParam(0, CA2T((idxRec).StudyInstanceUID));
-      bRes = pCmd->SetParam(1, CA2T((idxRec).SeriesInstanceUID));
-      bRes = pCmd->SetParam(2, CA2T((idxRec).SOPInstanceUID));
+      bRes = pCmd->SetParam(0, CA2T(idxRec.StudyInstanceUID));
+      bRes = pCmd->SetParam(1, CA2T(idxRec.SeriesInstanceUID));
+      bRes = pCmd->SetParam(2, CA2T(idxRec.SOPInstanceUID));
+      bRes = pCmd->SetParam(3, CA2T(idxRec.filename));
       CAutoPtr<IDbRecordset> pRec(piDbSystem_->CreateRecordset(piDbDatabase_));
       bRes = pCmd->Execute(pRec);
 
       //TODO: this seems screwed up, a remote call to sql server for 
       //every tag!!??, but as noted above is is not clear how to TVP 
       //and hard coding every tag in stored proc seems even more stupid
+      //TODO: at least make it work against an instance key (get from above)
+      //to avoid another lookup in the database
       for(int i = 0; i < NBPARAMETERS; i++){
           //TODO: check turn code
           bRes = pCmd->Create(_T(

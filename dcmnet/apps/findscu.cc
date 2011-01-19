@@ -238,8 +238,8 @@ int main(int argc, char *argv[])
       }
 
       /* command line parameters */
-      cmd.getParam(1, opt_peer);
-      app.checkParam(cmd.getParamAndCheckMinMax(2, opt_port, 1, 65535));
+      cmd.getParam(2, opt_peer);
+      app.checkParam(cmd.getParamAndCheckMinMax(3, opt_port, 1, 65535));
 
       OFLog::configureFromCommandLine(cmd, app);
 
@@ -315,7 +315,7 @@ int main(int argc, char *argv[])
       const char *currentFilename = NULL;
       OFString errormsg;
 
-      for (int i = 3; i <= paramCount; i++)
+      for (int i = 4; i <= paramCount; i++)
       {
         cmd.getParam(i, currentFilename);
         if (access(currentFilename, R_OK) < 0)

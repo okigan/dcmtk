@@ -1,6 +1,12 @@
 # Microsoft Developer Studio Project File - Database Project
 Begin DataProject = "dcmqrdb_mssql"
    MSDTVersion = "80"
+   Script = "1-database.sql"
+   Script = "2-tables.sql"
+   Script = "3-views.sql"
+   Script = "4-procs.sql"
+   Script = "5-index.sql"
+   Script = "6-funcs.sql"
    Script = "bootstrap.sql"
    Begin DBRefFolder = "Database References"
       Begin DBRefNode = "SQLOLEDB.(local)\SQLEXPRESS.master"
@@ -9,9 +15,4 @@ Begin DataProject = "dcmqrdb_mssql"
          Colorizer = 65536
       End
    End
-   Script = "database.sql"
-   Script = "index.sql"
-   Script = "procs.sql"
-   Script = "tables.sql"
-   Script = "views.sql"
 End

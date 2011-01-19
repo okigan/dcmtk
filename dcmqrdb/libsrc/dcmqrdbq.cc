@@ -1384,6 +1384,13 @@ OFCondition startFindRequestExtracted(
     return EC_Normal;
 }
 
+int GetTagGroupElement(const DcmTagKey& dcmTagKey)
+{
+    //TODO: the behavior of hash() may !? change in future, add a new new function instead of it
+    int tagNumber = dcmTagKey.hash();
+    return tagNumber;
+}
+
 OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
                 const char      *SOPClassUID,
                 DcmDataset      *findRequestIdentifiers,
@@ -1482,23 +1489,18 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
     int MatchFound = OFFalse ;
     cond = EC_Normal ;
 
-    IdxRecord idxRec ;
-
     //TODO: move out of the scope of this function to persist across calls
 
     std::string tagList, valueList;
 
     //TODO: really hate this shoving of values into comma separated list (type safety goes out the window)
     //TODO: plus this is slow
-    for(int i = 0; i < NBPARAMETERS; i++){
-        //TODO: the behavior of hash() may !? change in future, add a new new function instead of it
-        int tagNumber = idxRec.param[i].XTag.hash();
+    for(DB_ElementList* curr = plist; curr != NULL; curr = curr->next, tagList += ",", valueList += ","){
+        int tagNumber = GetTagGroupElement(curr->elem.XTag);
         char tagNumberStringDec[16] = "\0";
         itoa(tagNumber, tagNumberStringDec, 10);
         tagList += tagNumberStringDec;
-        tagList += ",";
-        valueList += idxRec.param[i].PValueField;
-        valueList += ",";
+        valueList += curr->elem.PValueField;
     }
 
     BOOL bRes = FALSE;
@@ -1514,6 +1516,22 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
     bRes = pCmd->SetParam(1, CA2T(valueList.c_str()));
     CAutoPtr<IDbRecordset> pRec(piDbSystem_->CreateRecordset(piDbDatabase_));
     bRes = pCmd->Execute(pRec);
+
+    DWORD dwCnt = pRec->GetRowCount();
+    dwCnt;
+
+    DWORD nFields = pRec->GetColumnCount();
+    for(DWORD i = 0; i < nFields; i++){
+        TCHAR name[128];
+        pRec->GetColumnName(i, name, ARRAYSIZE(name));
+    }
+
+    long lInstanceKey = -1;
+
+    while( !pRec->IsEOF() ) {
+        pRec->GetField(0, lInstanceKey);
+        pRec->MoveNext();
+    }
 
     /*** Exit loop if error or matching OK **/
 
@@ -1531,11 +1549,28 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
         return (cond) ;
     }
 
+    IdxRecord idxRec ;
 
+    CAutoPtr<IDbCommand> pCmd2(piDbSystem_->CreateCommand(piDbDatabase_));
+    bRes = pCmd2->Create(_T(
+        "EXEC [dcmqrdb_mssql].[dbo].[spGetInstanceAttributes]"
+        "  @instanceKey = ?"
+        ";"
+        ));
+    bRes = pCmd2->SetParam(0, &lInstanceKey);
+    CAutoPtr<IDbRecordset> pRec2(piDbSystem_->CreateRecordset(piDbDatabase_));
+    bRes = pCmd2->Execute(pRec2);
     /**** If a matching image has been found, add index record to UID found list 
           prepare Response List in handle return status is pending
     ***/
 
+    while( !pRec2->IsEOF() ) {
+        long tag = -1;
+        TCHAR value[128];
+        pRec2->GetField(pRec2->GetColumnIndex(_T("AttributeTag")), tag);
+        pRec2->GetField(pRec2->GetColumnIndex(_T("Value")), value, ARRAYSIZE(value));
+        pRec2->MoveNext();
+    }
     //TODO: move out of scope of this function to persist accross calls.
     DB_UidList *uidList = NULL;
 
@@ -2793,17 +2828,14 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::storeRequest (
               "EXEC [dcmqrdb_mssql].[dbo].[spRegisterDcmTag]"
               "  @studyUiid = ?"
               ", @instanceUiid = ?"
-              ", @DcmGroup =  ?"
-              ", @DcmElement =  ?"
+              ", @AttributeTag =  ?"
               ", @attributeValue = ?"
               ));
           bRes = pCmd->SetParam(0, CA2T((idxRec).StudyInstanceUID));
           bRes = pCmd->SetParam(1, CA2T((idxRec).SOPInstanceUID));
-          long group   = idxRec.param[i].XTag.getGroup();
-          long element = idxRec.param[i].XTag.getElement();
-          bRes = pCmd->SetParam(2, &group);
-          bRes = pCmd->SetParam(3, &element);
-          bRes = pCmd->SetParam(4, CA2T(idxRec.param[i].PValueField));
+          long tagGroupElement = GetTagGroupElement(idxRec.param[i].XTag);
+          bRes = pCmd->SetParam(2, &tagGroupElement);
+          bRes = pCmd->SetParam(3, CA2T(idxRec.param[i].PValueField));
           bRes = pCmd->Execute(pRec);
       }
 

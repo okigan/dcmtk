@@ -26,4 +26,20 @@ GO
 select * from dbo.SplitAndJoin ('asdf,asdfasdf', 'n,m', ',')
 GO
 
+select * from 
+dbo.SplitAndJoin ('10,20,30', 'a,b,c',',') AS a
+JOIN
+dbo.SplitAndJoin ('10,20,30', 'x,b,c',',') AS b
+ON a.[Key] = b.[Key] AND a.[Value] = b.[Value]
+GO
 
+USE [dcmqrdb_mssql]
+GO
+
+DECLARE	@return_value int
+
+EXEC	@return_value = [dbo].[spFindDcmInstance]
+		@tagList = N'16,8',
+		@valueList = N'F,20000216'
+
+SELECT	'Return Value' = @return_value

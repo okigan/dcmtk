@@ -136,6 +136,37 @@ static char *DB_strdup(const char* str)
     return s;
 }
 
+static DB_UidList* DB_UIDAddFound (
+                DB_UidList *uidList,
+                DB_LEVEL queryLevel, 
+                IdxRecord *idxRec
+                )
+{
+    DB_UidList *plist ;
+
+    plist = (DB_UidList *) malloc (sizeof (DB_UidList)) ;
+    if (plist == NULL) {
+        DCMQRDB_ERROR("DB_UIDAddFound: out of memory");
+        return NULL;
+    }
+    plist->next = uidList ;
+    plist->patient = NULL ;
+    plist->study = NULL ;
+    plist->serie = NULL ;
+    plist->image = NULL ;
+
+    if ((int)queryLevel >= PATIENT_LEVEL)
+        plist->patient = DB_strdup ((char *) idxRec->PatientID) ;
+    if ((int)queryLevel >= STUDY_LEVEL)
+        plist->study = DB_strdup ((char *) idxRec->StudyInstanceUID) ;
+    if ((int)queryLevel >= SERIE_LEVEL)
+        plist->serie = DB_strdup ((char *) idxRec->SeriesInstanceUID) ;
+    if ((int)queryLevel >= IMAGE_LEVEL)
+        plist->image = DB_strdup ((char *) idxRec->SOPInstanceUID) ;
+
+    return plist ;
+}
+
 /************
  *      Initializes addresses in an IdxRecord
  */
@@ -956,9 +987,9 @@ static int dbmatch (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt)
 **      using informations found in an index record.
 **      Old response list is supposed freed
 **/
-#if 0
-void DcmQueryRetrieveSQLDatabaseHandle::makeResponseList (
-                DB_Private_Handle       *phandle,
+
+static DB_ElementList* makeResponseList (
+                DB_ElementList  *findRequestList,
                 IdxRecord               *idxRec
                 )
 {
@@ -967,12 +998,11 @@ void DcmQueryRetrieveSQLDatabaseHandle::makeResponseList (
     DB_ElementList *plist = NULL;
     DB_ElementList *last = NULL;
 
-    phandle->findResponseList = NULL ;
-
+	DB_ElementList *findResponseList = NULL;
     /*** For each element in Request identifier
     **/
 
-    for (pRequestList = phandle->findRequestList ; pRequestList ; pRequestList = pRequestList->next) {
+    for (pRequestList = findRequestList ; pRequestList ; pRequestList = pRequestList->next) {
 
         /*** Find Corresponding Tag in index record
         **/
@@ -993,23 +1023,24 @@ void DcmQueryRetrieveSQLDatabaseHandle::makeResponseList (
         plist = (DB_ElementList *) malloc (sizeof (DB_ElementList)) ;
         if (plist == NULL) {
             DCMQRDB_ERROR("makeResponseList: out of memory");
-            return;
+            return NULL;
         }
         plist->next = NULL ;
 
         DB_DuplicateElement(&idxRec->param[i], &plist->elem);
 
-        if (phandle->findResponseList == NULL) {
-            phandle->findResponseList = last = plist ;
+        if (findResponseList == NULL) {
+            findResponseList = last = plist ;
         }
         else {
             last->next = plist ;
             last = plist ;
         }
-
     }
+
+    return findResponseList;
 }
-#endif
+
 
 #if 1
 /************
@@ -1440,7 +1471,7 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
             return (cond) ;
         }
     }
-#if 0
+
     /**** Goto the beginning of Index File
     **** Then find the first matching image
     ***/
@@ -1453,32 +1484,43 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
 
     IdxRecord idxRec ;
 
-    while (1) {
+    //TODO: move out of the scope of this function to persist across calls
 
-        /*** Exit loop if read error (or end of file)
-        **/
+    std::string tagList, valueList;
 
-        if (DB_IdxGetNext (&(handle_->idxCounter), &idxRec) != EC_Normal)
-            break ;
-
-        /*** Exit loop if error or matching OK
-        **/
-
-        cond = hierarchicalCompare (handle_, &idxRec, qLevel, qLevel, &MatchFound) ;
-        if (cond != EC_Normal)
-            break ;
-        if (MatchFound)
-            break ;
+    //TODO: really hate this shoving of values into comma separated list (type safety goes out the window)
+    //TODO: plus this is slow
+    for(int i = 0; i < NBPARAMETERS; i++){
+        //TODO: the behavior of hash() may !? change in future, add a new new function instead of it
+        int tagNumber = idxRec.param[i].XTag.hash();
+        char tagNumberStringDec[16] = "\0";
+        itoa(tagNumber, tagNumberStringDec, 10);
+        tagList += tagNumberStringDec;
+        tagList += ",";
+        valueList += idxRec.param[i].PValueField;
+        valueList += ",";
     }
 
-    /**** If an error occured in Matching function
-    ****    return a failed status
-    ***/
+    BOOL bRes = FALSE;
 
+    CAutoPtr<IDbCommand> pCmd(piDbSystem_->CreateCommand(piDbDatabase_));
+    bRes = pCmd->Create(_T(
+        "EXEC [dcmqrdb_mssql].[dbo].[spFindDcmInstance]"
+        "  @tagList = ?"
+        ", @valueList = ?"
+        ";"
+        ));
+    bRes = pCmd->SetParam(0, CA2T(tagList.c_str()));
+    bRes = pCmd->SetParam(1, CA2T(valueList.c_str()));
+    CAutoPtr<IDbRecordset> pRec(piDbSystem_->CreateRecordset(piDbDatabase_));
+    bRes = pCmd->Execute(pRec);
+
+    /*** Exit loop if error or matching OK **/
+
+    /**** If an error occured in Matching function return a failed status ***/
     if (cond != EC_Normal) {
-        handle_->idxCounter = -1 ;
-        DB_FreeElementList (handle_->findRequestList) ;
-        handle_->findRequestList = NULL ;
+        DB_FreeElementList (findRequestList) ;
+        findRequestList = NULL ;
 #ifdef DEBUG
         DCMQRDB_DEBUG("DB_startFindRequest () : STATUS_FIND_Failed_UnableToProcess");
 #endif
@@ -1490,15 +1532,19 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
     }
 
 
-    /**** If a matching image has been found,
-    ****         add index record to UID found list
-    ****    prepare Response List in handle
-    ****    return status is pending
+    /**** If a matching image has been found, add index record to UID found list 
+          prepare Response List in handle return status is pending
     ***/
 
+    //TODO: move out of scope of this function to persist accross calls.
+    DB_UidList *uidList = NULL;
+
+    //TODO: move out of scope of this function to persist accross calls.
+    DB_ElementList  *findResponseList = NULL;
+
     if (MatchFound) {
-        DB_UIDAddFound (handle_, &idxRec) ;
-        makeResponseList (handle_, &idxRec) ;
+        uidList = DB_UIDAddFound (uidList, queryLevel, &idxRec) ;
+        findResponseList = makeResponseList(findRequestList, &idxRec) ;
 #ifdef DEBUG
         DCMQRDB_DEBUG("DB_startFindRequest () : STATUS_Pending");
 #endif
@@ -1512,9 +1558,8 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
     ***/
 
     else {
-        handle_->idxCounter = -1 ;
-        DB_FreeElementList (handle_->findRequestList) ;
-        handle_->findRequestList = NULL ;
+        DB_FreeElementList (findRequestList) ;
+        findRequestList = NULL ;
 #ifdef DEBUG
         DCMQRDB_DEBUG("DB_startFindRequest () : STATUS_Success");
 #endif
@@ -1524,9 +1569,6 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
 
         return (EC_Normal) ;
     }
-#endif
-
-    return EC_MemoryExhausted;
 }
 
 /********************

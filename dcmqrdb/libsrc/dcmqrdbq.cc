@@ -1398,6 +1398,8 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
 {
 #if 1
     //DB_SmallDcmElmt     elem ;
+    DB_LEVEL            qLevel = PATIENT_LEVEL; // highest legal level for a query in the current model
+    DB_LEVEL            lLevel = IMAGE_LEVEL;   // lowest legal level for a query in the current model
     OFCondition cond = EC_Normal;
     OFBool      qrLevelFound = OFFalse;
     DB_QUERY_CLASS rootLevel = PATIENT_ROOT;
@@ -1442,9 +1444,6 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
         return (DcmQRSqlDatabaseError) ;
     }
 
-    DB_LEVEL            qLevel = PATIENT_LEVEL; // highest legal level for a query in the current model
-    DB_LEVEL            lLevel = IMAGE_LEVEL;   // lowest legal level for a query in the current model
-
     switch (rootLevel)
     {
       case PATIENT_ROOT :
@@ -1463,7 +1462,7 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
 
     /**** Test the consistency of the request list
     ***/
-#endif
+
 
     if (doCheckFindIdentifier) {
         cond = testFindRequestList (findRequestList, queryLevel, qLevel, lLevel) ;
@@ -1535,7 +1534,10 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
 
     /*** Exit loop if error or matching OK **/
 
-    /**** If an error occured in Matching function return a failed status ***/
+    /**** If an error occured in Matching function
+    ****    return a failed status
+    ***/
+
     if (cond != EC_Normal) {
         DB_FreeElementList (findRequestList) ;
         findRequestList = NULL ;

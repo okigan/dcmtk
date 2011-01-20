@@ -45,6 +45,7 @@ class DcmQueryRetrieveConfig;
 
 class IDbSystem;
 class IDbDatabase;
+class IDbRecordset;
 
 //TODO: move this (and other to a common area with index db)
 #define DBC_MAXSTRING           256
@@ -157,7 +158,7 @@ public:
    */
   OFCondition startFindRequest(
       const char *SOPClassUID,
-      DcmDataset *findRequestIdentifiers,
+      /*const*/ DcmDataset *findRequestIdentifiers,
       DcmQueryRetrieveDatabaseStatus *status);     
                 
   /** return the next available FIND response as a new DICOM dataset.
@@ -323,24 +324,24 @@ public:
       
 private:
 
-#if 0
-  OFCondition removeDuplicateImage(
-      const char *SOPInstanceUID, const char *StudyInstanceUID,
-      StudyDescRecord *pStudyDesc, const char *newImageFileName);
-  int deleteOldestStudy(StudyDescRecord *pStudyDesc);
-  OFCondition deleteOldestImages(StudyDescRecord *pStudyDesc, int StudyNum, char *StudyUID, long RequiredSize);
 
-  int matchDate (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt);
-  int matchTime (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt);
-  int matchUID (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt);
-  int matchStrings (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt);
-  int matchOther (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt);
-  int dbmatch (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt);
-  void makeResponseList(DB_Private_Handle *phandle, IdxRecord *idxRec);
-  int matchStudyUIDInStudyDesc (StudyDescRecord *pStudyDesc, char *StudyUID, int maxStudiesAllowed);
-  OFCondition checkupinStudyDesc(StudyDescRecord *pStudyDesc, char *StudyUID, long imageSize);
+  //OFCondition removeDuplicateImage(
+  //    const char *SOPInstanceUID, const char *StudyInstanceUID,
+  //    StudyDescRecord *pStudyDesc, const char *newImageFileName);
+  //int deleteOldestStudy(StudyDescRecord *pStudyDesc);
+  //OFCondition deleteOldestImages(StudyDescRecord *pStudyDesc, int StudyNum, char *StudyUID, long RequiredSize);
 
-#endif 
+  //int matchDate (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt);
+  //int matchTime (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt);
+  //int matchUID (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt);
+  //int matchStrings (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt);
+  //int matchOther (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt);
+  //int dbmatch (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt);
+  //void makeResponseList(DB_Private_Handle *phandle, IdxRecord *idxRec);
+  //int matchStudyUIDInStudyDesc (StudyDescRecord *pStudyDesc, char *StudyUID, int maxStudiesAllowed);
+  //OFCondition checkupinStudyDesc(StudyDescRecord *pStudyDesc, char *StudyUID, long imageSize);
+
+
   OFCondition hierarchicalCompare (
       DB_Private_Handle *phandle,
       IdxRecord         *idxRec,
@@ -366,6 +367,8 @@ private:
   DB_Private_Handle *handle_; //TODO: remove 
   IDbSystem *piDbSystem_;
   IDbDatabase *piDbDatabase_;
+
+  IDbRecordset *piFindRecordSet_;
 
   char storageArea_[DBC_MAXSTRING+1] ;
 

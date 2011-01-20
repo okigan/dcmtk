@@ -1396,7 +1396,6 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
                 DcmDataset      *findRequestIdentifiers,
                 DcmQueryRetrieveDatabaseStatus  *status)
 {
-#if 1
     //DB_SmallDcmElmt     elem ;
     DB_LEVEL            qLevel = PATIENT_LEVEL; // highest legal level for a query in the current model
     DB_LEVEL            lLevel = IMAGE_LEVEL;   // lowest legal level for a query in the current model
@@ -1477,14 +1476,7 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
             return (cond) ;
         }
     }
-
-    /**** Goto the beginning of Index File
-    **** Then find the first matching image
-    ***/
-
-    //DB_lock(OFFalse);
-
-    //DB_IdxInitLoop (&(handle_->idxCounter)) ;
+    
     int MatchFound = OFFalse ;
     cond = EC_Normal ;
 
@@ -1527,9 +1519,14 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
 
     long lInstanceKey = -1;
 
-    while( !pRec->IsEOF() ) {
-        pRec->GetField(0, lInstanceKey);
-        pRec->MoveNext();
+    if( !pRec->IsEOF() ) {
+        piFindRecordSet_ = pRec.Detach();
+        status->setStatus(STATUS_Pending);
+        return (EC_Normal) ;
+    }else{
+        //nothing found
+        status->setStatus(STATUS_Success);
+        return (EC_Normal) ;
     }
 
     /*** Exit loop if error or matching OK **/
@@ -1550,62 +1547,6 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
 
         return (cond) ;
     }
-
-    IdxRecord idxRec ;
-
-    CAutoPtr<IDbCommand> pCmd2(piDbSystem_->CreateCommand(piDbDatabase_));
-    bRes = pCmd2->Create(_T(
-        "EXEC [dcmqrdb_mssql].[dbo].[spGetInstanceAttributes]"
-        "  @instanceKey = ?"
-        ";"
-        ));
-    bRes = pCmd2->SetParam(0, &lInstanceKey);
-    CAutoPtr<IDbRecordset> pRec2(piDbSystem_->CreateRecordset(piDbDatabase_));
-    bRes = pCmd2->Execute(pRec2);
-    /**** If a matching image has been found, add index record to UID found list 
-          prepare Response List in handle return status is pending
-    ***/
-
-    while( !pRec2->IsEOF() ) {
-        long tag = -1;
-        TCHAR value[128];
-        pRec2->GetField(pRec2->GetColumnIndex(_T("AttributeTag")), tag);
-        pRec2->GetField(pRec2->GetColumnIndex(_T("Value")), value, ARRAYSIZE(value));
-        pRec2->MoveNext();
-    }
-    //TODO: move out of scope of this function to persist accross calls.
-    DB_UidList *uidList = NULL;
-
-    //TODO: move out of scope of this function to persist accross calls.
-    DB_ElementList  *findResponseList = NULL;
-
-    if (MatchFound) {
-        uidList = DB_UIDAddFound (uidList, queryLevel, &idxRec) ;
-        findResponseList = makeResponseList(findRequestList, &idxRec) ;
-#ifdef DEBUG
-        DCMQRDB_DEBUG("DB_startFindRequest () : STATUS_Pending");
-#endif
-        status->setStatus(STATUS_Pending);
-        return (EC_Normal) ;
-    }
-
-    /**** else no matching image has been found,
-    ****    free query identifiers list
-    ****    status is success
-    ***/
-
-    else {
-        DB_FreeElementList (findRequestList) ;
-        findRequestList = NULL ;
-#ifdef DEBUG
-        DCMQRDB_DEBUG("DB_startFindRequest () : STATUS_Success");
-#endif
-        status->setStatus(STATUS_Success);
-
-        //DB_unlock();
-
-        return (EC_Normal) ;
-    }
 }
 
 /********************
@@ -1616,7 +1557,65 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::nextFindResponse (
                 DcmDataset      **findResponseIdentifiers,
                 DcmQueryRetrieveDatabaseStatus  *status)
 {
-  return EC_MemoryExhausted;
+    BOOL bRes = FALSE;
+    
+    for(long lInstanceKey = -1; !piFindRecordSet_->IsEOF(); piFindRecordSet_->MoveNext()) {
+        piFindRecordSet_->GetField(piFindRecordSet_->GetColumnIndex(_T("InstanceKey")), lInstanceKey);
+
+        CAutoPtr<IDbCommand> pCmd2(piDbSystem_->CreateCommand(piDbDatabase_));
+        bRes = pCmd2->Create(_T(
+            "EXEC [dcmqrdb_mssql].[dbo].[spGetInstanceAttributes]"
+            "  @instanceKey = ?"
+            ";"
+            ));
+        bRes = pCmd2->SetParam(0, &lInstanceKey);
+        CAutoPtr<IDbRecordset> pRec2(piDbSystem_->CreateRecordset(piDbDatabase_));
+        bRes = pCmd2->Execute(pRec2);
+
+        IdxRecord idxRec ;
+
+        /**** If a matching image has been found, add index record to UID found list 
+        prepare Response List in handle return status is pending
+        ***/
+
+        *findResponseIdentifiers = new DcmDataset();
+
+        for(; !pRec2->IsEOF(); pRec2->MoveNext()){
+            long tag = -1;
+            TCHAR value[128];
+            pRec2->GetField(pRec2->GetColumnIndex(_T("AttributeTag")), tag);
+            pRec2->GetField(pRec2->GetColumnIndex(_T("Value")), value, ARRAYSIZE(value));
+
+            DcmTag t(((tag >> 16) & 0xFFFF), tag & 0xFFFF);
+            DcmElement *dce = newDicomElement(t);
+            if (dce == NULL) {
+                status->setStatus(STATUS_FIND_Refused_OutOfResources);
+                return DcmQRSqlDatabaseError;
+            }
+
+            OFCondition ec = dce->putString(CT2A(value));
+            if (ec != EC_Normal) {
+                DCMQRDB_WARN("dbfind: DB_nextFindResponse: cannot put()");
+                status->setStatus(STATUS_FIND_Failed_UnableToProcess);
+                return DcmQRSqlDatabaseError;
+            }
+
+            ec = (*findResponseIdentifiers)->insert(dce, OFTrue /*replaceOld*/);
+            if (ec != EC_Normal) {
+                DCMQRDB_WARN("dbfind: DB_nextFindResponse: cannot insert()");
+                status->setStatus(STATUS_FIND_Failed_UnableToProcess);
+                return DcmQRSqlDatabaseError;
+            }
+        }
+        status->setStatus(STATUS_Pending);
+        return (EC_Normal) ;
+    }
+    //TODO: free up the response db dataset
+
+    *findResponseIdentifiers = NULL ;
+    status->setStatus(STATUS_Success);
+
+    return (EC_Normal) ;
 
 #if 0
     DB_ElementList      *plist = NULL;

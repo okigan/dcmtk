@@ -15,4 +15,5 @@ Begin DataProject = "dcmqrdb_mssql"
          Colorizer = 65536
       End
    End
+   Script = "test.split.sql"
 End

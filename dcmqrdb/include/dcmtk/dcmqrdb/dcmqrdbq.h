@@ -367,6 +367,7 @@ private:
   DB_Private_Handle *handle_; //TODO: remove 
   IDbSystem *piDbSystem_;
   IDbDatabase *piDbDatabase_;
+  DB_LEVEL     queryLevel_;
 
   IDbRecordset *piFindRecordSet_;
 

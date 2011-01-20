@@ -1287,12 +1287,14 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::hierarchicalCompare (
     return DcmQRSqlDatabaseError;
 }
 #endif
+
 /********************
 **      Start find in Database
 **/
 
-OFCondition startFindRequestExtracted(
-                                      DcmDataset *findRequestIdentifiers
+//TODO: refactor into use of OFList, but kept as is for reference to index file
+OFCondition extractRequestIdentifiers(
+                                      /*const*/ DcmDataset *findRequestIdentifiers
                                       , DcmQueryRetrieveDatabaseStatus *status
                                       , DB_ElementList*& plist
                                       , DB_ElementList*& last
@@ -1337,17 +1339,21 @@ OFCondition startFindRequestExtracted(
                 for (pc = level ; *pc ; pc++)
                     *pc = ((*pc >= 'a') && (*pc <= 'z')) ? 'A' - 'a' + *pc : *pc ;
 
-                if (strncmp(level, PATIENT_LEVEL_STRING, strlen(PATIENT_LEVEL_STRING)) == 0){
+                if (strncmp (level, PATIENT_LEVEL_STRING,
+                             strlen (PATIENT_LEVEL_STRING)) == 0)
                     queryLevel = PATIENT_LEVEL ;
-                }else if (strncmp(level, STUDY_LEVEL_STRING, strlen(STUDY_LEVEL_STRING)) == 0){
+                else if (strncmp (level, STUDY_LEVEL_STRING,
+                                  strlen (STUDY_LEVEL_STRING)) == 0)
                     queryLevel = STUDY_LEVEL ;
-                }else if (strncmp(level, SERIE_LEVEL_STRING, strlen(SERIE_LEVEL_STRING)) == 0){
+                else if (strncmp (level, SERIE_LEVEL_STRING,
+                                  strlen (SERIE_LEVEL_STRING)) == 0)
                     queryLevel = SERIE_LEVEL ;
-                }else if (strncmp(level, IMAGE_LEVEL_STRING, strlen(IMAGE_LEVEL_STRING)) == 0){
+                else if (strncmp (level, IMAGE_LEVEL_STRING,
+                                  strlen (IMAGE_LEVEL_STRING)) == 0)
                     queryLevel = IMAGE_LEVEL ;
-                }else {
-                    if (elem.PValueField)
-                        free(elem.PValueField) ;
+                else {
+                    if (elem. PValueField)
+                        free (elem. PValueField) ;
 #ifdef DEBUG
                     DCMQRDB_DEBUG("DB_startFindRequest () : Illegal query level (" << level << ")");
 #endif
@@ -1396,14 +1402,16 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
                 DcmDataset      *findRequestIdentifiers,
                 DcmQueryRetrieveDatabaseStatus  *status)
 {
-    //DB_SmallDcmElmt     elem ;
+    DB_ElementList      *plist = NULL;
+    DB_ElementList      *last = NULL;
     DB_LEVEL            qLevel = PATIENT_LEVEL; // highest legal level for a query in the current model
     DB_LEVEL            lLevel = IMAGE_LEVEL;   // lowest legal level for a query in the current model
     OFCondition cond = EC_Normal;
     OFBool      qrLevelFound = OFFalse;
     DB_QUERY_CLASS rootLevel = PATIENT_ROOT;
 
-    /**** Is SOPClassUID supported ? ***/
+    /**** Is SOPClassUID supported ?
+    ***/
 
     if (strcmp( SOPClassUID, UID_FINDPatientRootQueryRetrieveInformationModel) == 0){
         rootLevel = PATIENT_ROOT ;
@@ -1425,11 +1433,8 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
     ***/
 
     DB_ElementList  *findRequestList = NULL ;
-    DB_LEVEL        queryLevel;
-    DB_ElementList  *plist = NULL;
-    DB_ElementList  *last = NULL;
 
-    cond = startFindRequestExtracted(findRequestIdentifiers, status, plist, last, qrLevelFound, queryLevel, findRequestList);
+    cond = extractRequestIdentifiers(findRequestIdentifiers, status, plist, last, qrLevelFound, queryLevel_, findRequestList);
     if (EC_Normal != cond)
         return cond;
 
@@ -1464,7 +1469,7 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
 
 
     if (doCheckFindIdentifier) {
-        cond = testFindRequestList (findRequestList, queryLevel, qLevel, lLevel) ;
+        cond = testFindRequestList (findRequestList, queryLevel_, qLevel, lLevel) ;
         if (cond != EC_Normal) {
             handle_->idxCounter = -1 ;
             DB_FreeElementList (handle_->findRequestList) ;
@@ -1479,8 +1484,6 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
     
     int MatchFound = OFFalse ;
     cond = EC_Normal ;
-
-    //TODO: move out of the scope of this function to persist across calls
 
     std::string tagList, valueList;
 
@@ -1514,7 +1517,7 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
     DWORD nFields = pRec->GetColumnCount();
     for(DWORD i = 0; i < nFields; i++){
         TCHAR name[128];
-        pRec->GetColumnName(i, name, ARRAYSIZE(name));
+        pRec->GetColumnName((short)i, name, ARRAYSIZE(name));
     }
 
     long lInstanceKey = -1;
@@ -1557,9 +1560,12 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::nextFindResponse (
                 DcmDataset      **findResponseIdentifiers,
                 DcmQueryRetrieveDatabaseStatus  *status)
 {
+    const char          *queryLevelString = NULL;
+
     BOOL bRes = FALSE;
     
-    for(long lInstanceKey = -1; !piFindRecordSet_->IsEOF(); piFindRecordSet_->MoveNext()) {
+    long lInstanceKey = -1; 
+    while(!piFindRecordSet_->IsEOF()) {
         piFindRecordSet_->GetField(piFindRecordSet_->GetColumnIndex(_T("InstanceKey")), lInstanceKey);
 
         CAutoPtr<IDbCommand> pCmd2(piDbSystem_->CreateCommand(piDbDatabase_));
@@ -1607,6 +1613,31 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::nextFindResponse (
                 return DcmQRSqlDatabaseError;
             }
         }
+        /*** Append the Query level
+        **/
+
+        switch (queryLevel_) {
+        case PATIENT_LEVEL :
+            queryLevelString = PATIENT_LEVEL_STRING ;
+            break ;
+        case STUDY_LEVEL :
+            queryLevelString = STUDY_LEVEL_STRING ;
+            break ;
+        case SERIE_LEVEL :
+            queryLevelString = SERIE_LEVEL_STRING ;
+            break ;
+        case IMAGE_LEVEL :
+            queryLevelString = IMAGE_LEVEL_STRING ;
+            break ;
+        }
+        DU_putStringDOElement(*findResponseIdentifiers,
+                              DCM_QueryRetrieveLevel, queryLevelString);
+#ifdef DEBUG
+        DCMQRDB_DEBUG("DB: findResponseIdentifiers:" << OFendl
+            << DcmObject::PrintHelper(**findResponseIdentifiers));
+#endif		
+        piFindRecordSet_->MoveNext();
+
         status->setStatus(STATUS_Pending);
         return (EC_Normal) ;
     }

@@ -62,7 +62,7 @@ END_EXTERN_C
 #endif
 
 
-const OFConditionConst DcmQRSqlDatabaseErrorC(OFM_imagectn, 0x001, OF_error, "DcmQR Index Database Error");
+const OFConditionConst DcmQRSqlDatabaseErrorC(OFM_imagectn, 0x001, OF_error, "DcmQR Sql Database Error");
 const OFCondition DcmQRSqlDatabaseError(DcmQRSqlDatabaseErrorC);
 
 /* ========================= static data ========================= */
@@ -427,7 +427,7 @@ static int DB_TagSupported (DcmTagKey tag)
 
 }
 
-#if 1
+
 /*******************
  *    Get UID tag of a specified level
  */
@@ -436,25 +436,23 @@ static OFCondition DB_GetUIDTag (DB_LEVEL level, DcmTagKey *tag)
 {
     int i;
 
-    for (i = 0; i < NbFindAttr; i++){
-        if ((TbFindAttr[i]. level == level) && (TbFindAttr[i]. keyAttr == UNIQUE_KEY))
-            break;
-    }
+    for (i = 0; i < NbFindAttr; i++)
+    if ((TbFindAttr[i]. level == level) && (TbFindAttr[i]. keyAttr == UNIQUE_KEY))
+        break;
 
     if (i < NbFindAttr) {
         *tag = TbFindAttr[i].tag;
         return (EC_Normal);
     }
-    else{
-        return (DcmQRSqlDatabaseError);
-    }
+    else
+	return (DcmQRSqlDatabaseError);
 
 }
-#endif 
+
 /*******************
  *    Get tag level of a specified tag
  */
-#if 1
+
 static OFCondition DB_GetTagLevel (DcmTagKey tag, DB_LEVEL *level)
 {
     int i;
@@ -491,153 +489,7 @@ static OFCondition DB_GetTagKeyAttr (DcmTagKey tag, DB_KEY_TYPE *keyAttr)
     return (DcmQRSqlDatabaseError);
 }
 
-/*******************
- *    Get tag key attribute of a specified tag
- */
 
-static OFCondition DB_GetTagKeyClass (DcmTagKey tag, DB_KEY_CLASS *keyAttr)
-{
-    int i;
-
-    for (i = 0; i < NbFindAttr; i++)
-    if (TbFindAttr[i]. tag == tag)
-        break;
-
-    if (i < NbFindAttr) {
-        *keyAttr = TbFindAttr[i]. keyClass;
-        return (EC_Normal);
-    }
-    else
-    return (DcmQRSqlDatabaseError);
-}
-
-
-/*******************
- *    Remove spaces in a string
- */
-
-static void DB_RemoveSpaces (char *string)
-{
-    char *pc1, *pc2;
-
-    for (pc1 = pc2 = string; *pc2; pc2++) {
-        if (*pc2 != ' ') {
-            *pc1 = *pc2;
-            pc1++;
-        }
-    }
-    *pc1 = '\0';
-}
-
-/*******************
- *    Remove leading and trailing spaces in a string
- */
-
-static void DB_RemoveEnclosingSpaces (char *string)
-{
-    char *pc1, *pc2;
-
-    /** Find in pc2 the first non space character
-    ** If not found, string is empty
-    */
-
-    for (pc2 = string; (*pc2 != '\0') && (*pc2 == ' '); pc2++);
-    if (*pc2 == '\0') {
-        string [0] = '\0';
-        return;
-    }
-
-    /** Shift the string if necessary
-     */
-
-    if (pc2 != string) {
-        for (pc1 = string; *pc2; pc1++, pc2++)
-            *pc1 = *pc2;
-        *pc1 = '\0';
-    }
-
-    /** Ship trailing spaces
-     */
-
-    for (pc2 = string + strlen (string) - 1; *pc2 == ' '; pc2--);
-        pc2++;
-    *pc2 = '\0';
-}
-
-
-/*******************
- *    Convert a date YYYYMMDD in a long
- */
-//TODO: remove?
-static long DB_DateToLong (char *date)
-{
-    char year [5];
-    char month[3];
-    char day  [3];
-
-    strncpy (year, date, 4);
-    year [4] = '\0';
-    strncpy (month, date + 4, 2);
-    month [2] = '\0';
-    strncpy (day, date + 6, 2);
-    day [2] = '\0';
-
-    return ((atol(year) * 10000) + (atol(month) * 100) + atol(day));
-}
-
-
-/*******************
- *    Convert a time in a double
- */
-
-static double DB_TimeToDouble (char *thetime)
-{
-    char t [20];
-    char tmp [4];
-
-    double result = 0.;
-    char *pc;
-
-    /*** Get fractionnal part if exists
-    **/
-
-    strcpy (t, thetime);
-    if ((pc = strchr (t, '.')) != NULL) {
-        double f;
-
-        *pc = '\0';
-        for (pc++, f = 1.; (*pc) && (isdigit (OFstatic_cast(unsigned char, *pc))); pc++) {
-            f /= 10.;
-            result += (*pc - '0') * f;
-        }
-    }
-
-    /*** Add default values (mm ss) if necessary
-    **/
-
-    strcat (t, "0000");
-    t [6] = '\0';
-
-    /*** Get Hours, Minutes and Seconds
-    **/
-
-    strncpy (tmp, t, 2);
-    tmp [3] = '\0';
-    result += 3600. * OFStandard::atof(tmp);
-
-    strncpy (tmp, t + 2, 2);
-    tmp [3] = '\0';
-    result += 60. * OFStandard::atof(tmp);
-
-    strncpy (tmp, t + 4, 2);
-    tmp [3] = '\0';
-    result += OFStandard::atof(tmp);
-
-    return result;
-}
-#endif
-
-#if 1
 /***********************
  *    Duplicate a dicom element
  *    dst space is supposed provided by the caller
@@ -662,385 +514,6 @@ static void DB_DuplicateElement (DB_SmallDcmElmt *src, DB_SmallDcmElmt *dst)
         }
     }
 }
-#endif
-
-#if 1
-
-/* ========================= FIND ========================= */
-
-/************
-**      Try to match Two Dates
-**      The first one is the "model", the second one an element
-**      Returns OFTrue if matching is ok, else returns OFFalse
- */
-
-static int matchDate (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt)
-{
-    char date [DBC_MAXSTRING] ;
-    char modl [DBC_MAXSTRING] ;
-
-    /*** Get elt and model data in strings
-    **/
-
-    memcpy (date, elt->PValueField, (size_t)(elt->ValueLength)) ;
-    date [elt->ValueLength] = '\0' ;
-    DB_RemoveSpaces (date) ;
-
-    memcpy (modl, mod->PValueField, (size_t)(mod->ValueLength)) ;
-    modl [mod->ValueLength] = '\0' ;
-    DB_RemoveSpaces (modl) ;
-
-    /*** If no '-' in date
-    *** return strict comparison result
-    **/
-
-    if (strchr (modl, '-') == NULL)
-        return (strcmp (modl, date) == 0) ;
-
-    /*** If first char is -
-    **/
-
-    if (modl [0] == '-') {
-        return DB_DateToLong (date) <= DB_DateToLong (modl+1) ;
-    }
-
-    /*** If last char is -
-    **/
-
-    else if (modl [strlen (modl) - 1] == '-') {
-        modl [strlen (modl) - 1] = '\0' ;
-        return DB_DateToLong (date) >= DB_DateToLong (modl) ;
-    }
-    else {
-        char *pc ;
-        long d ;
-
-        d = DB_DateToLong (date) ;
-        pc = strchr (modl, '-') ;
-        *pc = '\0' ;
-
-        return (d >= DB_DateToLong (modl)) && (d <= DB_DateToLong (pc+1)) ;
-
-    }
-}
-
-/************
-**      Try to match Two Times
-**      The first one is the "model", the second one an element
-**      Returns OFTrue if matching is ok, else returns OFFalse
- */
-
-static int matchTime (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt)
-{
-    char aTime [DBC_MAXSTRING] ;
-    char modl [DBC_MAXSTRING] ;
-
-    /*** Get elt and model data in strings
-    **/
-
-    memcpy (aTime, elt->PValueField, (size_t)(elt->ValueLength)) ;
-    aTime [elt->ValueLength] = '\0' ;
-    DB_RemoveSpaces (aTime) ;
-
-    memcpy (modl, mod->PValueField, (size_t)(mod->ValueLength)) ;
-    modl [mod->ValueLength] = '\0' ;
-    DB_RemoveSpaces (modl) ;
-
-    /*** If no '-' in time
-    *** return strict comparison result
-    **/
-
-    if (strchr (modl, '-') == NULL)
-        return (strcmp (modl, aTime) == 0) ;
-
-    /*** If first char is -
-    **/
-
-    if (modl [0] == '-') {
-        return DB_TimeToDouble (aTime) <= DB_TimeToDouble (modl+1) ;
-    }
-
-    /*** If last char is -
-    **/
-
-    else if (modl [strlen (modl) - 1] == '-') {
-        modl [strlen (modl) - 1] = '\0' ;
-        return DB_TimeToDouble (aTime) >= DB_TimeToDouble (modl) ;
-    }
-    else {
-        char *pc ;
-        double t ;
-
-        t = DB_TimeToDouble (aTime) ;
-        pc = strchr (modl, '-') ;
-        *pc = '\0' ;
-
-        return (t >= DB_TimeToDouble (modl)) && (t <= DB_TimeToDouble (pc+1)) ;
-
-    }
-}
-
-/************
-**      Try to match Two UID
-**      The first one is the "model", the second one an element
-**      Returns OFTrue if matching is ok, else returns OFFalse
- */
-
-static int matchUID (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt)
-{
-    int match ;
-    char *uid ;
-    char *modl ;
-    char *pc ;
-    unsigned int length ;
-
-    /*** Get elt and model data in strings
-    **/
-
-    uid = (char *) malloc ((size_t)(elt->ValueLength + 1)) ;
-    if (uid == NULL) {
-        return 0 ;
-    }
-    memcpy (uid, elt->PValueField, (size_t)(elt->ValueLength)) ;
-    uid [elt->ValueLength] = '\0' ;
-
-    modl = (char *) malloc ((size_t)(mod->ValueLength + 1)) ;
-    if (modl == NULL) {
-        free (uid) ;
-        return 0 ;
-    }
-    memcpy (modl, mod->PValueField, (size_t)(mod->ValueLength)) ;
-    modl [mod->ValueLength] = '\0' ;
-
-    /*** If no '\' in model
-    *** return strict comparison result
-    **/
-
-#ifdef STRICT_COMPARE
-#else
-    /*** Suppress Leading and Trailing spaces in
-    *** model and string
-    **/
-
-    DB_RemoveEnclosingSpaces (uid) ;
-    DB_RemoveEnclosingSpaces (modl) ;
-#endif
-
-    if (strchr (modl, '\\') == NULL) {
-        match = (strcmp (modl, uid) == 0) ;
-        free (uid) ;
-        free (modl) ;
-        return (match) ;
-    }
-
-    /*** UID List comparison.
-    *** Match is successful if uid is found in model
-    **/
-
-    match = OFFalse ;
-    for (pc = modl ; *pc ; ) {
-
-        /*** Calculate the length to the next '\' sign (if any).
-        *** Otherwise the length of pc is returned.
-        **/
-        length = strcspn(pc, "\\") ;
-
-        if ((length == strlen(uid)) && (strncmp (pc, uid, length) == 0)) {
-            match = OFTrue ;
-            break ;
-        }
-        else {
-            pc = strchr (pc, '\\') ;
-            if (pc == NULL)
-                break ;
-            else
-                pc++ ;
-        }
-    }
-
-    free (uid) ;
-    free (modl) ;
-    return (match) ;
-
-}
-
-/************
-**      Try to match Two Strings
-**      The first one is the "model", the second one an element
-**      Returns OFTrue if matching is ok, else returns OFFalse
- */
-
-static int matchStrings (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt)
-{
-    int match ;
-    char *string ;
-    char *modl ;
-
-    /*** Get elt and model data in strings
-    **/
-
-    string = (char *) malloc ((size_t)(elt->ValueLength + 1)) ;
-    if (string == NULL) {
-        return 0 ;
-    }
-    memcpy (string, elt->PValueField, (size_t)(elt->ValueLength)) ;
-    string [elt->ValueLength] = '\0' ;
-
-    modl = (char *) malloc ((size_t)(mod->ValueLength + 1)) ;
-    if (modl == NULL) {
-        free (string) ;
-        return 0 ;
-    }
-    memcpy (modl, mod->PValueField, (size_t)(mod->ValueLength)) ;
-    modl [mod->ValueLength] = '\0' ;
-
-#ifdef STRICT_COMPARE
-#else
-    /*** Suppress Leading and Trailing spaces in
-    *** model and string
-    **/
-
-    DB_RemoveEnclosingSpaces (string) ;
-    DB_RemoveEnclosingSpaces (modl) ;
-#endif
-
-    /*** If no '*' and no '?' in model
-    *** return strict comparison result
-    **/
-
-    if ((strchr (modl, '*') == NULL) && (strchr (modl, '?') == NULL))
-        return (strcmp (modl, string) == 0) ;
-
-    match = DB_StringUnify (modl, string) ;
-
-    free (string) ;
-    free (modl) ;
-    return (match) ;
-
-}
-
-/************
-**      Try to match Two Unknown elements
-**      Strict comparaison is applied
-**      The first one is the "model", the second one an element
-**      Returns OFTrue if matching is ok, else returns OFFalse
- */
-
-static int matchOther (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt)
-{
-    if (mod->ValueLength != elt->ValueLength)
-        return OFFalse ;
-
-    return (memcmp (mod->PValueField, elt->PValueField, (size_t)(elt->ValueLength)) == 0) ;
-}
-#endif
-
-//TODO: move all of the above match* methods to a common util
-
-#if 1
-/************
-**      Try to match Two DB_SmallDcmElmts
-**      The first one is the "model", the second one an element
-**      Returns OFTrue if matching is ok, else returns OFFalse
- */
-
-static int dbmatch (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt)
-{
-    DB_KEY_CLASS keyClass = OTHER_CLASS;
-
-    /*** If model length is 0
-    *** Universal matching is applied : return always OFTrue
-    **/
-
-    if (mod->ValueLength == 0)
-        return (OFTrue) ;
-
-    /*** Get the key class of the element
-    **/
-
-    DB_GetTagKeyClass (elt->XTag, &keyClass) ;
-
-    switch (keyClass) {
-
-    case DATE_CLASS :
-        return matchDate (mod, elt) ;
-
-    case TIME_CLASS :
-        return matchTime (mod, elt) ;
-
-    case UID_CLASS :
-        return matchUID  (mod, elt) ;
-
-    case STRING_CLASS :
-        return matchStrings (mod, elt) ;
-
-    case OTHER_CLASS :
-        return matchOther (mod, elt) ;
-
-    }
-    return OFFalse;
-}
-
-#endif 
-/************
-**      Create the response list in specified handle,
-**      using informations found in an index record.
-**      Old response list is supposed freed
-**/
-
-static DB_ElementList* makeResponseList (
-                DB_ElementList  *findRequestList,
-                IdxRecord               *idxRec
-                )
-{
-    int i ;
-    DB_ElementList *pRequestList = NULL;
-    DB_ElementList *plist = NULL;
-    DB_ElementList *last = NULL;
-
-	DB_ElementList *findResponseList = NULL;
-    /*** For each element in Request identifier
-    **/
-
-    for (pRequestList = findRequestList ; pRequestList ; pRequestList = pRequestList->next) {
-
-        /*** Find Corresponding Tag in index record
-        **/
-
-        for (i = 0 ; i < NBPARAMETERS ; i++)
-            if (idxRec->param [i]. XTag == pRequestList->elem. XTag)
-                break ;
-
-        /*** If Tag not found, skip the element
-        **/
-
-        if (i >= NBPARAMETERS)
-            continue ;
-
-        /*** Append index record element to response list
-        **/
-
-        plist = (DB_ElementList *) malloc (sizeof (DB_ElementList)) ;
-        if (plist == NULL) {
-            DCMQRDB_ERROR("makeResponseList: out of memory");
-            return NULL;
-        }
-        plist->next = NULL ;
-
-        DB_DuplicateElement(&idxRec->param[i], &plist->elem);
-
-        if (findResponseList == NULL) {
-            findResponseList = last = plist ;
-        }
-        else {
-            last->next = plist ;
-            last = plist ;
-        }
-    }
-
-    return findResponseList;
-}
-
 
 #if 1
 /************
@@ -1181,113 +654,6 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::testFindRequestList (
 }
 #endif
 
-#if 1
-/************
-**      Hierarchical Search Algorithm
-**      Returns OFTrue if matching is ok, else returns OFFalse
- */
-
-OFCondition DcmQueryRetrieveSQLDatabaseHandle::hierarchicalCompare (
-                DB_Private_Handle       *phandle,
-                IdxRecord               *idxRec,
-                DB_LEVEL                level,
-                DB_LEVEL                infLevel,
-                int                     *match)
-{
-    int                 i ;
-    DcmTagKey   XTag ;
-    DB_ElementList *plist ;
-    DB_LEVEL    XTagLevel  = PATIENT_LEVEL; // DB_GetTagLevel() will set this correctly
-
-    /**** If current level is above the QueryLevel
-    ***/
-
-    if (level < phandle->queryLevel) {
-
-        /** Get UID Tag for current level */
-        DB_GetUIDTag (level, &XTag) ;
-
-        /** Find Element with this XTag in Identifier list*/
-        for (plist = phandle->findRequestList ; plist ; plist = plist->next){
-            if (plist->elem.XTag == XTag)
-                break ;
-        }
-
-        /** Element not found */
-        if (plist == NULL) {
-            *match = OFFalse ;
-            DCMQRDB_WARN("hierarchicalCompare : No UID Key found at level " << (int) level);
-            return DcmQRSqlDatabaseError ;
-        }
-
-        /** Find element with the same XTag in index record */
-        for (i = 0 ; i < NBPARAMETERS ; i++){
-            if (idxRec->param[i]. XTag == XTag)
-                break ;
-        }
-
-        /** Compare with Single value matching. If Match fails, return OFFalse */
-        if (! dbmatch (&(plist->elem), &idxRec->param[i])) {
-            *match = OFFalse ;
-            return EC_Normal ;
-        }
-
-        /** Match succeeded. Try at next level */
-
-        return hierarchicalCompare (phandle, idxRec, (DB_LEVEL)(level + 1), infLevel, match) ;
-    }
-    /**** If current level is the QueryLevel ***/
-    else if (level == phandle->queryLevel) {
-
-        /*** For each element in Identifier list **/
-        for (plist = phandle->findRequestList ; plist ; plist = plist->next) {
-
-            /** Get the Tag level of this element*/
-
-            DB_GetTagLevel (plist->elem. XTag, &XTagLevel) ;
-
-            /** If we are in the Study Root Information Model exception
-            ** we must accept patients keys at the study level
-            */
-            if (  (XTagLevel == PATIENT_LEVEL)
-                  && (phandle->queryLevel == STUDY_LEVEL)
-                  && (infLevel == STUDY_LEVEL)
-                )
-                ;
-
-            /** In other cases, only keys at the current level are
-            ** taken into account. So skip this element.
-            */
-            else if (XTagLevel != level)
-                continue ;
-
-            /** Find element with the same XTag in index record
-             */
-
-            for (i = 0 ; i < NBPARAMETERS ; i++){
-                if (idxRec->param [i]. XTag == plist->elem. XTag)
-                    break ;
-            }
-
-            /** Compare with appropriate Matching. If Match fails, return OFFalse */
-            if (! dbmatch (&(plist->elem), &idxRec->param[i])) {
-                *match = OFFalse ;
-                return EC_Normal ;
-            }
-        }
-
-        /*** If we are here, all matches succeeded at the current level.
-        *** Perhaps check that we have tried at least one match ??
-        **/
-
-        *match = OFTrue ;
-        return EC_Normal ;
-
-    }
-    return DcmQRSqlDatabaseError;
-}
-#endif
-
 /********************
 **      Start find in Database
 **/
@@ -1300,7 +666,7 @@ OFCondition extractRequestIdentifiers(
                                       , DB_ElementList*& last
                                       , bool& qrLevelFound
                                       , DB_LEVEL& queryLevel
-                                      , DB_ElementList *findRequestList)
+                                      , DB_ElementList *&findRequestList)
 {
     DB_SmallDcmElmt elem;
     
@@ -1334,7 +700,7 @@ OFCondition extractRequestIdentifiers(
                     (elem.ValueLength<50)? (size_t)(elem.ValueLength) : 49) ;
 
                 /*** Skip this two lines if you want strict comparison
-                **/
+                man, inlining strup must provide some awesome performance gain (j)**/
 
                 for (pc = level ; *pc ; pc++)
                     *pc = ((*pc >= 'a') && (*pc <= 'z')) ? 'A' - 'a' + *pc : *pc ;
@@ -1434,7 +800,16 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
 
     DB_ElementList  *findRequestList = NULL ;
 
-    cond = extractRequestIdentifiers(findRequestIdentifiers, status, plist, last, qrLevelFound, queryLevel_, findRequestList);
+    cond = extractRequestIdentifiers(
+        findRequestIdentifiers
+        , status
+        , plist
+        , last
+        , qrLevelFound
+        , queryLevel_
+        , findRequestList
+    );
+
     if (EC_Normal != cond)
         return cond;
 
@@ -1486,15 +861,23 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
     cond = EC_Normal ;
 
     std::string tagList, valueList;
+    //reserver some space to avoid memory thrashing
+    tagList.reserve(512);
+    valueList.reserve(512);
 
     //TODO: really hate this shoving of values into comma separated list (type safety goes out the window)
-    //TODO: plus this is slow
-    for(DB_ElementList* curr = plist; curr != NULL; curr = curr->next, tagList += ",", valueList += ","){
+    //TODO: plus this is slow (though one needs to confirm that)
+    for(DB_ElementList* curr = plist; curr != NULL; curr = curr->next){
         int tagNumber = GetTagGroupElement(curr->elem.XTag);
         char tagNumberStringDec[16] = "\0";
         itoa(tagNumber, tagNumberStringDec, 10);
         tagList += tagNumberStringDec;
         valueList += curr->elem.PValueField;
+
+        if(curr != plist){
+            tagList += ",";
+            valueList += ",";
+        }
     }
 
     BOOL bRes = FALSE;
@@ -1511,16 +894,13 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
     CAutoPtr<IDbRecordset> pRec(piDbSystem_->CreateRecordset(piDbDatabase_));
     bRes = pCmd->Execute(pRec);
 
-    DWORD dwCnt = pRec->GetRowCount();
-    dwCnt;
-
-    DWORD nFields = pRec->GetColumnCount();
-    for(DWORD i = 0; i < nFields; i++){
-        TCHAR name[128];
-        pRec->GetColumnName((short)i, name, ARRAYSIZE(name));
+    if(!bRes){
+#ifdef DEBUG
+        DCMQRDB_DEBUG("DB_startFindRequest () : STATUS_FIND_Failed_UnableToProcess");
+#endif
+        status->setStatus(STATUS_FIND_Failed_UnableToProcess);
+        return DcmQRSqlDatabaseError;
     }
-
-    long lInstanceKey = -1;
 
     if( !pRec->IsEOF() ) {
         piFindRecordSet_ = pRec.Detach();
@@ -1530,25 +910,6 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
         //nothing found
         status->setStatus(STATUS_Success);
         return (EC_Normal) ;
-    }
-
-    /*** Exit loop if error or matching OK **/
-
-    /**** If an error occured in Matching function
-    ****    return a failed status
-    ***/
-
-    if (cond != EC_Normal) {
-        DB_FreeElementList (findRequestList) ;
-        findRequestList = NULL ;
-#ifdef DEBUG
-        DCMQRDB_DEBUG("DB_startFindRequest () : STATUS_FIND_Failed_UnableToProcess");
-#endif
-        status->setStatus(STATUS_FIND_Failed_UnableToProcess);
-
-        //DB_unlock();
-
-        return (cond) ;
     }
 }
 
@@ -3095,30 +2456,12 @@ DcmQueryRetrieveSQLDatabaseHandle::DcmQueryRetrieveSQLDatabaseHandle(
     long maxStudiesPerStorageArea,
     long maxBytesPerStudy,
     OFCondition& result)
-    :   quotaSystemEnabled(OFTrue)
+	: handle_(NULL)
+    , quotaSystemEnabled(OFTrue)
     , doCheckFindIdentifier(OFFalse)
     , doCheckMoveIdentifier(OFFalse)
     , fnamecreator()
 {
-    handle_ = NULL;
-
-    //TODO: clean up the strcpy
-    strcpy(storageArea_, storageArea);
-
-    BOOL bRet = FALSE;
-    bRet = OpenDbSystem(0, DB_SYSTEM_OLEDB, &piDbSystem_);
-
-    CAutoPtr<IDbDatabase> pDb(piDbSystem_->CreateDatabase());
-    BOOL bRes = pDb->Open(NULL, CA2T(connectionString), _T(""), _T(""), DB_OPEN_READ_ONLY);
-    if( !bRes ) {
-        TCHAR szMsg[256];
-        pDb->GetErrors()->GetError(0)->GetMessage(szMsg, 256);
-        ::MessageBox( NULL, szMsg, _T("Database Test"), MB_OK|MB_ICONERROR);
-        //return EC_MemoryExhausted;
-    }
-
-    piDbDatabase_ = pDb.Detach();
-
 
 #ifdef DEBUG
     DCMQRDB_DEBUG("DB_createHandle () : Handle created for " << storageArea);
@@ -3137,6 +2480,23 @@ DcmQueryRetrieveSQLDatabaseHandle::DcmQueryRetrieveSQLDatabaseHandle(
     if (maxBytesPerStudy < 0 || maxBytesPerStudy > DB_UpperMaxBytesPerStudy) {
         maxBytesPerStudy = DB_UpperMaxBytesPerStudy;
     }
+	
+    //TODO: clean up the strcpy
+    strcpy(storageArea_, storageArea);
+
+    BOOL bRet = FALSE;
+    bRet = OpenDbSystem(0, DB_SYSTEM_OLEDB, &piDbSystem_);
+
+    CAutoPtr<IDbDatabase> pDb(piDbSystem_->CreateDatabase());
+    BOOL bRes = pDb->Open(NULL, CA2T(connectionString), _T(""), _T(""), DB_OPEN_READ_ONLY);
+    if( !bRes ) {
+        TCHAR szMsg[256];
+        pDb->GetErrors()->GetError(0)->GetMessage(szMsg, 256);
+        ::MessageBox( NULL, szMsg, _T("Database Test"), MB_OK|MB_ICONERROR);
+        //return EC_MemoryExhausted;
+    }
+
+    piDbDatabase_ = pDb.Detach();
 }
 
 /***********************
@@ -3242,7 +2602,7 @@ DcmQueryRetrieveDatabaseHandle *DcmQueryRetrieveSQLDatabaseHandleFactory::create
     OFCondition& result) const
 {
   return new DcmQueryRetrieveSQLDatabaseHandle(
-//TODO: get from config
+	//TODO: get from config
     //"Provider=SQLOLEDB;Data Source=localhost\\SQLEXPRESS;Persist Security Info=True;User ID=t;Password=t",
     //"Provider=SQLOLEDB;Data Source=localhost\\SQLEXPRESS;"
     config_->getConnectionString(calledAETitle),

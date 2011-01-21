@@ -48,6 +48,7 @@ class IDbDatabase;
 class IDbRecordset;
 
 //TODO: move this (and other to a common area with index db)
+
 #define DBC_MAXSTRING           256
 
 /** enumeration describing the levels of the DICOM Q/R information model
@@ -248,79 +249,6 @@ public:
    */
   void enableQuotaSystem(OFBool enable);
 
-#if 0
-  /** dump database index file to stdout.
-   *  @param storeArea name of storage area, must not be NULL
-   */
-  static void printIndexFile (char *storeArea);
-    
-  /** deletes the given file only if the quota mechanism is enabled.
-   *  The image is not de-registered from the database by this routine.
-   *  @param imgFile file name (path) to the file to be deleted.
-   *  @return EC_Normal upon normal completion, or some other OFCondition code upon failure.
-   */
-  OFCondition deleteImageFile(char* imgFile);
-
-  /** create lock on database
-   *  @param exclusive exclusive/shared lock flag
-   *  @return EC_Normal upon success, an error code otherwise
-   */
-  OFCondition DB_lock(OFBool exclusive);
-
-  /** release lock on database
-   */
-  OFCondition DB_unlock();
-
-  /** Get next Index record that is in use (i.e. references a non-empty a filename)
-   *  @param idx pointer to index number, updated upon successful return
-   *  @param idxRec pointer to index record structure
-   *  @return EC_Normal upon success, an error code otherwise
-   */
-  OFCondition DB_IdxGetNext(int *idx, IdxRecord *idxRec);
-
-  /** seek to beginning of image records in index file
-   *  @param idx initialized to -1
-   *  @return EC_Normal upon success, an error code otherwise
-   */
-  OFCondition DB_IdxInitLoop(int *idx);
-
-  /** read index record at given index
-   *  @param idx index
-   *  @param idxRec pointer to index record
-   *  @return EC_Normal upon success, an error code otherwise
-   */
-  OFCondition DB_IdxRead(int idx, IdxRecord *idxRec);
-
-  /** get study descriptor record from start of index file
-   *  @param pStudyDesc pointer to study record descriptor structure
-   *  @return EC_Normal upon success, an error code otherwise
-   */
-  OFCondition DB_GetStudyDesc(StudyDescRecord *pStudyDesc);
-
-  /** write study descriptor record to start of index file
-   *  @param pStudyDesc pointer to study record descriptor structure
-   *  @return EC_Normal upon success, an error code otherwise
-   */
-  OFCondition DB_StudyDescChange(StudyDescRecord *pStudyDesc);
-
-  /** deactivate index record at given index by setting an empty filename
-   *  @param idx index
-   *  @return EC_Normal upon success, an error code otherwise
-   */
-  OFCondition DB_IdxRemove(int idx);
-
-  /** clear the "is new" flag for the instance with the given index
-   *  @param idx index
-   *  @return EC_Normal upon success, an error code otherwise
-   */
-  OFCondition instanceReviewed(int idx);
-
-  /// return name of storage area
-  const char *getStorageArea() const;
-
-  /// return path to index file
-  const char *getIndexFilename() const;
-#endif
       
 private:
 
@@ -356,13 +284,7 @@ private:
       DB_LEVEL        infLevel,
       DB_LEVEL        lowestLevel);
 #endif
-#if 0
-  OFCondition testMoveRequestList (
-      DB_ElementList  *findRequestList,
-      DB_LEVEL        queryLevel,
-      DB_LEVEL        infLevel,
-      DB_LEVEL        lowestLevel);
-#endif
+
   /// database handles
   DB_Private_Handle *handle_; //TODO: remove 
   IDbSystem *piDbSystem_;

@@ -1,6 +1,18 @@
 USE [dcmqrdb_mssql]
 GO
 
+IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[spFindDcmInstance]') AND type in (N'P', N'PC'))
+DROP PROCEDURE [dbo].[spFindDcmInstance]
+GO
+
+IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[spFindMatchingAttibutes]') AND type in (N'P', N'PC'))
+DROP PROCEDURE [dbo].[spFindMatchingAttibutes]
+GO
+
+IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[spGetInstanceAttributes]') AND type in (N'P', N'PC'))
+DROP PROCEDURE [dbo].[spGetInstanceAttributes]
+GO
+
 IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[spRegisterDcmInstance]') AND type in (N'P', N'PC'))
 DROP PROCEDURE [dbo].[spRegisterDcmInstance]
 GO
@@ -18,6 +30,95 @@ DROP PROCEDURE [dbo].[TVPTest]
 GO
 
 USE [dcmqrdb_mssql]
+GO
+
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+-- =============================================
+-- Author:		Igor Okulist
+-- Create date: 
+-- Description:	
+-- =============================================
+CREATE PROCEDURE [dbo].[spFindDcmInstance] 
+	-- Add the parameters for the stored procedure here
+	@tagList nvarchar(1024), 
+	@valueList nvarchar(1024)
+AS
+BEGIN
+	SET NOCOUNT ON;
+	
+	SELECT v.InstanceKey, v.InstanceUiid, v.FilePath, COUNT(v.AttributeKey) as MatchedAttributes
+	FROM vwStudySeriesInstanceFileAttribute AS v 
+	INNER JOIN
+	dbo.SplitAndJoin(@tagList, @valueList, ',') AS q 
+	ON v.AttributeTag = q.[Key] AND v.Value = q.Value
+	GROUP BY v.InstanceKey, v.InstanceUiid, v.FilePath
+	HAVING COUNT(v.AttributeKey) >= (SELECT COUNT(1) FROM  dbo.SplitAndJoin(@tagList, @valueList, ',') )
+	ORDER BY MatchedAttributes DESC
+END
+
+GO
+
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+-- =============================================
+-- Author:		Igor Okulist
+-- Create date: 
+-- Description:	
+-- =============================================
+CREATE PROCEDURE [dbo].[spFindMatchingAttibutes] 
+	-- Add the parameters for the stored procedure here
+	@tagList nvarchar(1024), 
+	@valueList nvarchar(1024)
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	SELECT v.InstanceKey, v.AttributeKey, v.InstanceUiid,  v.AttributeTag, v.Value
+	FROM vwStudySeriesInstanceFileAttribute AS v 
+	INNER JOIN
+	dbo.SplitAndJoin(@tagList, @valueList, ',') AS q 
+	ON v.AttributeTag = q.[Key] AND v.Value = q.Value
+
+END
+
+GO
+
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+-- =============================================
+-- Author:		Igor Okulist
+-- Create date: 
+-- Description:	
+-- =============================================
+CREATE PROCEDURE [dbo].[spGetInstanceAttributes] 
+	-- Add the parameters for the stored procedure here
+	@instanceKey int
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+SELECT     v.*
+FROM         vwAttributes AS v
+WHERE     (InstanceKey = @instanceKey)
+END
+
 GO
 
 SET ANSI_NULLS ON
@@ -154,8 +255,7 @@ CREATE PROCEDURE [dbo].[spRegisterDcmTag]
 	-- Add the parameters for the stored procedure here
 	  @studyUiid nvarchar(64)
 	, @instanceUiid nvarchar(64)
-	, @DcmGroup int
-	, @DcmElement int
+	, @AttributeTag int
 	, @attributeValue nvarchar(1024)
 AS
 BEGIN
@@ -168,8 +268,8 @@ BEGIN
 		
     SET @InstanceKey = (SELECT InstanceKey FROM dbo.vwStudySeriesIntance WHERE StudyUiid = @studyUiid AND InstanceUiid = @instanceUiid)
 	
-	INSERT INTO dbo.tbAttribute (InstanceKey, DcmGroup, DcmElement, Value)
-	VALUES (@InstanceKey, @DcmGroup, @DcmElement, @attributeValue)
+	INSERT INTO dbo.tbAttribute (InstanceKey, AttributeTag, Value)
+	VALUES (@InstanceKey, @AttributeTag, @attributeValue)
 END
 
 

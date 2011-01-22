@@ -49,7 +49,7 @@ class IDbRecordset;
 
 //TODO: move this (and other to a common area with index db)
 
-#define DBC_MAXSTRING           256
+
 
 /** enumeration describing the levels of the DICOM Q/R information model
  */
@@ -109,7 +109,7 @@ public:
    */
   void setIdentifierChecking(OFBool checkFind, OFBool checkMove);
 
-  /** This is not applicable to the database, but need to change higher level 
+  /**TODO: This is not applicable to the database, but need to change higher level 
       interface to correct this (at a later point)
   */
   /** create a filename under which a DICOM object that is currently
@@ -251,51 +251,28 @@ public:
 
       
 private:
-
-
-  //OFCondition removeDuplicateImage(
-  //    const char *SOPInstanceUID, const char *StudyInstanceUID,
-  //    StudyDescRecord *pStudyDesc, const char *newImageFileName);
-  //int deleteOldestStudy(StudyDescRecord *pStudyDesc);
-  //OFCondition deleteOldestImages(StudyDescRecord *pStudyDesc, int StudyNum, char *StudyUID, long RequiredSize);
-
-  //int matchDate (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt);
-  //int matchTime (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt);
-  //int matchUID (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt);
-  //int matchStrings (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt);
-  //int matchOther (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt);
-  //int dbmatch (DB_SmallDcmElmt *mod, DB_SmallDcmElmt *elt);
-  //void makeResponseList(DB_Private_Handle *phandle, IdxRecord *idxRec);
-  //int matchStudyUIDInStudyDesc (StudyDescRecord *pStudyDesc, char *StudyUID, int maxStudiesAllowed);
-  //OFCondition checkupinStudyDesc(StudyDescRecord *pStudyDesc, char *StudyUID, long imageSize);
-
-
-  OFCondition hierarchicalCompare (
-      DB_Private_Handle *phandle,
-      IdxRecord         *idxRec,
-      DB_LEVEL          level,
-      DB_LEVEL          infLevel,
-      int               *match);
-
-#if 1
-  OFCondition testFindRequestList (
+    
+    OFCondition testFindRequestList (
       DB_ElementList  *findRequestList,
       DB_LEVEL        queryLevel,
       DB_LEVEL        infLevel,
       DB_LEVEL        lowestLevel);
-#endif
+
 
   /// database handles
-  DB_Private_Handle *handle_; //TODO: remove 
-  IDbSystem *piDbSystem_;
-  IDbDatabase *piDbDatabase_;
-  DB_LEVEL     queryLevel_;
+   //TODO: remove 
+  DB_Private_Handle *handle_;
 
-  IDbRecordset *piFindRecordSet_;
+  IDbSystem     *piDbSystem_;
+  IDbDatabase   *piDbDatabase_;
+  DB_LEVEL      queryLevel_;
 
-  char storageArea_[DBC_MAXSTRING+1] ;
+  //TODO: make sure there are no (interface) leaks
+  IDbRecordset* piFindRecordSet_;
 
-
+  /// path to the storage area
+  OFString storageArea_;
+  
   /// flag indicating whether or not the quota system is enabled
   OFBool quotaSystemEnabled;
 

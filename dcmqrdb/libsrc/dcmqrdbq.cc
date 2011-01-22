@@ -55,7 +55,7 @@ END_EXTERN_C
 #include "dcmtk/ofstd/ofstd.h"
 
 #ifdef WITH_SQL_DATABASE
-//TODO: move these of this file
+//TODO: move these out of this file
 
 #include <atlbase.h>
 #include "dblib/dblib.h"
@@ -84,6 +84,7 @@ const OFCondition DcmQRSqlDatabaseError(DcmQRSqlDatabaseErrorC);
  **** all Unique and Required keys.
  ***/
 
+//TODO: move this table into a common file
 static const DB_FindAttr TbFindAttr [] = {
         DB_FindAttr( DCM_PatientBirthDate,                      PATIENT_LEVEL,  OPTIONAL_KEY,   DATE_CLASS      ),
         DB_FindAttr( DCM_PatientSex,                            PATIENT_LEVEL,  OPTIONAL_KEY,   STRING_CLASS    ),
@@ -127,7 +128,7 @@ static const DB_FindAttr TbFindAttr [] = {
 static int NbFindAttr = ((sizeof (TbFindAttr)) / (sizeof (TbFindAttr [0])));
 
 /* ========================= static functions ========================= */
-//TODO: remove ?
+//TODO: replace or move into a common (utility) file
 static char *DB_strdup(const char* str)
 {
     if (str == NULL) return NULL;
@@ -136,6 +137,9 @@ static char *DB_strdup(const char* str)
     return s;
 }
 
+/************
+**      Add UID in Index Record to the UID found list
+ */
 static DB_UidList* DB_UIDAddFound (
                 DB_UidList *uidList,
                 DB_LEVEL queryLevel, 
@@ -662,13 +666,13 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::testFindRequestList (
 OFCondition extractRequestIdentifiers(
                                       /*const*/ DcmDataset *findRequestIdentifiers
                                       , DcmQueryRetrieveDatabaseStatus *status
-                                      , DB_ElementList*& plist
-                                      , DB_ElementList*& last
                                       , bool& qrLevelFound
                                       , DB_LEVEL& queryLevel
                                       , DB_ElementList *&findRequestList)
 {
     DB_SmallDcmElmt elem;
+    DB_ElementList  *plist = NULL;
+    DB_ElementList  *last = NULL;
     
     int elemCount = (int)(findRequestIdentifiers->card());
     for (int elemIndex=0; elemIndex<elemCount; elemIndex++) {
@@ -763,18 +767,61 @@ int GetTagGroupElement(const DcmTagKey& dcmTagKey)
     return tagNumber;
 }
 
-OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
-                const char      *SOPClassUID,
-                DcmDataset      *findRequestIdentifiers,
-                DcmQueryRetrieveDatabaseStatus  *status)
+//TODO: pass in the level of the query down to the search proc
+BOOL DbspFindDcmInstance(
+                               IDbSystem     *piDbSystem_
+                               , IDbDatabase   *piDbDatabase_
+                               , DB_ElementList *findRequestList
+                               , IDbRecordset **ppRec)
 {
-    DB_ElementList      *plist = NULL;
-    DB_ElementList      *last = NULL;
-    DB_LEVEL            qLevel = PATIENT_LEVEL; // highest legal level for a query in the current model
-    DB_LEVEL            lLevel = IMAGE_LEVEL;   // lowest legal level for a query in the current model
-    OFCondition cond = EC_Normal;
-    OFBool      qrLevelFound = OFFalse;
-    DB_QUERY_CLASS rootLevel = PATIENT_ROOT;
+    BOOL bRes = FALSE;
+    std::string tagList, valueList;
+    //reserver some space to avoid memory thrashing
+    tagList.reserve(512);
+    valueList.reserve(512);
+
+    //TODO: really hate this shoving of values into comma separated list (type safety goes out the window)
+    //TODO: plus this is slow (though one needs to confirm that)
+    for(DB_ElementList* curr = findRequestList; curr != NULL; curr = curr->next){
+        if(curr != findRequestList){
+            tagList += ",";
+            valueList += ",";
+        }
+
+        int tagNumber = GetTagGroupElement(curr->elem.XTag);
+        char tagNumberStringDec[16] = "\0";
+        itoa(tagNumber, tagNumberStringDec, 10);
+        tagList += tagNumberStringDec;
+        valueList += curr->elem.PValueField;
+    }
+
+    bRes = FALSE;
+
+    CAutoPtr<IDbCommand> pCmd(piDbSystem_->CreateCommand(piDbDatabase_));
+    bRes = pCmd->Create(_T(
+        "EXEC [dcmqrdb_mssql].[dbo].[spFindDcmInstance]"
+        "  @tagList = ?"
+        ", @valueList = ?"
+        ";"
+        ));
+    bRes = pCmd->SetParam(0, CA2T(tagList.c_str()));
+    bRes = pCmd->SetParam(1, CA2T(valueList.c_str()));
+    *ppRec = (piDbSystem_->CreateRecordset(piDbDatabase_));
+    bRes = pCmd->Execute(*ppRec);
+
+    return bRes;
+}
+
+OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
+    const char      *SOPClassUID,
+    DcmDataset      *findRequestIdentifiers,
+    DcmQueryRetrieveDatabaseStatus  *status)
+{
+    DB_LEVEL        qLevel = PATIENT_LEVEL; // highest legal level for a query in the current model
+    DB_LEVEL        lLevel = IMAGE_LEVEL;   // lowest legal level for a query in the current model
+    OFCondition     cond = EC_Normal;
+    OFBool          qrLevelFound = OFFalse;
+    DB_QUERY_CLASS  rootLevel = PATIENT_ROOT;
 
     /**** Is SOPClassUID supported ?
     ***/
@@ -803,8 +850,6 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
     cond = extractRequestIdentifiers(
         findRequestIdentifiers
         , status
-        , plist
-        , last
         , qrLevelFound
         , queryLevel_
         , findRequestList
@@ -846,9 +891,6 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
     if (doCheckFindIdentifier) {
         cond = testFindRequestList (findRequestList, queryLevel_, qLevel, lLevel) ;
         if (cond != EC_Normal) {
-            handle_->idxCounter = -1 ;
-            DB_FreeElementList (handle_->findRequestList) ;
-            handle_->findRequestList = NULL ;
 #ifdef DEBUG
             DCMQRDB_DEBUG("DB_startFindRequest () : STATUS_FIND_Failed_IdentifierDoesNotMatchSOPClass - Invalid RequestList");
 #endif
@@ -860,39 +902,9 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
     int MatchFound = OFFalse ;
     cond = EC_Normal ;
 
-    std::string tagList, valueList;
-    //reserver some space to avoid memory thrashing
-    tagList.reserve(512);
-    valueList.reserve(512);
-
-    //TODO: really hate this shoving of values into comma separated list (type safety goes out the window)
-    //TODO: plus this is slow (though one needs to confirm that)
-    for(DB_ElementList* curr = plist; curr != NULL; curr = curr->next){
-        int tagNumber = GetTagGroupElement(curr->elem.XTag);
-        char tagNumberStringDec[16] = "\0";
-        itoa(tagNumber, tagNumberStringDec, 10);
-        tagList += tagNumberStringDec;
-        valueList += curr->elem.PValueField;
-
-        if(curr != plist){
-            tagList += ",";
-            valueList += ",";
-        }
-    }
-
-    BOOL bRes = FALSE;
-
-    CAutoPtr<IDbCommand> pCmd(piDbSystem_->CreateCommand(piDbDatabase_));
-    bRes = pCmd->Create(_T(
-        "EXEC [dcmqrdb_mssql].[dbo].[spFindDcmInstance]"
-        "  @tagList = ?"
-        ", @valueList = ?"
-        ";"
-        ));
-    bRes = pCmd->SetParam(0, CA2T(tagList.c_str()));
-    bRes = pCmd->SetParam(1, CA2T(valueList.c_str()));
-    CAutoPtr<IDbRecordset> pRec(piDbSystem_->CreateRecordset(piDbDatabase_));
-    bRes = pCmd->Execute(pRec);
+    
+    CAutoPtr<IDbRecordset> pRec;
+    BOOL bRes = DbspFindDcmInstance(piDbSystem_, piDbDatabase_, findRequestList, &pRec.m_p);
 
     if(!bRes){
 #ifdef DEBUG
@@ -913,6 +925,61 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::startFindRequest(
     }
 }
 
+OFCondition DbSpGetInstanceAttributes(
+    IDbSystem* piDbSystem,
+    IDbDatabase* piDbDatabase,
+    DcmDataset **findResponseIdentifiers, 
+    DcmQueryRetrieveDatabaseStatus *status, 
+    long lInstanceKey 
+    )
+{
+    BOOL bRes = FALSE;;
+    CAutoPtr<IDbCommand> pCmd(piDbSystem->CreateCommand(piDbDatabase));
+    bRes = pCmd->Create(_T(
+        "EXEC [dcmqrdb_mssql].[dbo].[spGetInstanceAttributes]"
+        "  @instanceKey = ?"
+        ";"
+        ));
+    bRes = pCmd->SetParam(0, &lInstanceKey);
+    CAutoPtr<IDbRecordset> pRec(piDbSystem->CreateRecordset(piDbDatabase));
+    bRes = pCmd->Execute(pRec);
+
+    /**** If a matching image has been found, add index record to UID found list
+    prepare Response List in handle return status is pending
+    ***/
+
+    *findResponseIdentifiers = new DcmDataset();
+
+    for(; !pRec->IsEOF(); pRec->MoveNext()){
+        long tag = -1;
+        TCHAR value[128];
+        pRec->GetField(pRec->GetColumnIndex(_T("AttributeTag")), tag);
+        pRec->GetField(pRec->GetColumnIndex(_T("Value")), value, ARRAYSIZE(value));
+
+        DcmTag t(((tag >> 16) & 0xFFFF), tag & 0xFFFF);
+        DcmElement *dce = newDicomElement(t);
+        if (dce == NULL) {
+            status->setStatus(STATUS_FIND_Refused_OutOfResources);
+            return DcmQRSqlDatabaseError;
+        }
+
+        OFCondition ec = dce->putString(CT2A(value));
+        if (ec != EC_Normal) {
+            DCMQRDB_WARN("dbfind: DB_nextFindResponse: cannot put()");
+            status->setStatus(STATUS_FIND_Failed_UnableToProcess);
+            return DcmQRSqlDatabaseError;
+        }
+
+        ec = (*findResponseIdentifiers)->insert(dce, OFTrue /*replaceOld*/);
+        if (ec != EC_Normal) {
+            DCMQRDB_WARN("dbfind: DB_nextFindResponse: cannot insert()");
+            status->setStatus(STATUS_FIND_Failed_UnableToProcess);
+            return DcmQRSqlDatabaseError;
+        }
+    }
+
+    return EC_Normal;
+}
 /********************
 **      Get next find response in Database
  */
@@ -923,57 +990,21 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::nextFindResponse (
 {
     const char          *queryLevelString = NULL;
 
-    BOOL bRes = FALSE;
-    
     long lInstanceKey = -1; 
     while(!piFindRecordSet_->IsEOF()) {
         piFindRecordSet_->GetField(piFindRecordSet_->GetColumnIndex(_T("InstanceKey")), lInstanceKey);
 
-        CAutoPtr<IDbCommand> pCmd2(piDbSystem_->CreateCommand(piDbDatabase_));
-        bRes = pCmd2->Create(_T(
-            "EXEC [dcmqrdb_mssql].[dbo].[spGetInstanceAttributes]"
-            "  @instanceKey = ?"
-            ";"
-            ));
-        bRes = pCmd2->SetParam(0, &lInstanceKey);
-        CAutoPtr<IDbRecordset> pRec2(piDbSystem_->CreateRecordset(piDbDatabase_));
-        bRes = pCmd2->Execute(pRec2);
+        //TODO: modify to select an object at corresponding level (study/series/instance)
+        //or (hacky like orignal index file impl) skip entries that have the same UIID
+        
+        OFCondition lResult = DbSpGetInstanceAttributes(
+            piDbSystem_, 
+            piDbDatabase_, 
+            findResponseIdentifiers, status, lInstanceKey
+        );
 
-        IdxRecord idxRec ;
-
-        /**** If a matching image has been found, add index record to UID found list 
-        prepare Response List in handle return status is pending
-        ***/
-
-        *findResponseIdentifiers = new DcmDataset();
-
-        for(; !pRec2->IsEOF(); pRec2->MoveNext()){
-            long tag = -1;
-            TCHAR value[128];
-            pRec2->GetField(pRec2->GetColumnIndex(_T("AttributeTag")), tag);
-            pRec2->GetField(pRec2->GetColumnIndex(_T("Value")), value, ARRAYSIZE(value));
-
-            DcmTag t(((tag >> 16) & 0xFFFF), tag & 0xFFFF);
-            DcmElement *dce = newDicomElement(t);
-            if (dce == NULL) {
-                status->setStatus(STATUS_FIND_Refused_OutOfResources);
-                return DcmQRSqlDatabaseError;
-            }
-
-            OFCondition ec = dce->putString(CT2A(value));
-            if (ec != EC_Normal) {
-                DCMQRDB_WARN("dbfind: DB_nextFindResponse: cannot put()");
-                status->setStatus(STATUS_FIND_Failed_UnableToProcess);
-                return DcmQRSqlDatabaseError;
-            }
-
-            ec = (*findResponseIdentifiers)->insert(dce, OFTrue /*replaceOld*/);
-            if (ec != EC_Normal) {
-                DCMQRDB_WARN("dbfind: DB_nextFindResponse: cannot insert()");
-                status->setStatus(STATUS_FIND_Failed_UnableToProcess);
-                return DcmQRSqlDatabaseError;
-            }
-        }
+        if (EC_Normal != lResult )
+            return lResult;
         /*** Append the Query level
         **/
 
@@ -1008,188 +1039,6 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::nextFindResponse (
     status->setStatus(STATUS_Success);
 
     return (EC_Normal) ;
-
-#if 0
-    DB_ElementList      *plist = NULL;
-    int                 MatchFound = OFFalse;
-    IdxRecord           idxRec ;
-    DB_LEVEL            qLevel = PATIENT_LEVEL;
-    const char          *queryLevelString = NULL;
-    OFCondition         cond = EC_Normal;
-
-    if (handle_->findResponseList == NULL) {
-#ifdef DEBUG
-        DCMQRDB_DEBUG("DB_nextFindResponse () : STATUS_Success");
-#endif
-        *findResponseIdentifiers = NULL ;
-        status->setStatus(STATUS_Success);
-
-        DB_unlock();
-
-        return (EC_Normal) ;
-    }
-
-    /***** Create the response (findResponseIdentifiers) using
-    ***** the last find done and saved in handle findResponseList
-    ****/
-
-    *findResponseIdentifiers = new DcmDataset ;
-    if ( *findResponseIdentifiers != NULL ) {
-
-        /*** Put responses
-        **/
-
-        for ( plist = handle_->findResponseList ; plist != NULL ; plist = plist->next ) {
-            DcmTag t(plist->elem.XTag);
-            DcmElement *dce = newDicomElement(t);
-            if (dce == NULL) {
-                status->setStatus(STATUS_FIND_Refused_OutOfResources);
-                return DcmQRIndexDatabaseError;
-            }
-            if (plist->elem.PValueField != NULL &&
-                strlen(plist->elem.PValueField) > 0) {
-                OFCondition ec = dce->putString(plist->elem.PValueField);
-                if (ec != EC_Normal) {
-                    DCMQRDB_WARN("dbfind: DB_nextFindResponse: cannot put()");
-                    status->setStatus(STATUS_FIND_Failed_UnableToProcess);
-                    return DcmQRIndexDatabaseError;
-                }
-            }
-            OFCondition ec = (*findResponseIdentifiers)->insert(dce, OFTrue /*replaceOld*/);
-            if (ec != EC_Normal) {
-                DCMQRDB_WARN("dbfind: DB_nextFindResponse: cannot insert()");
-                status->setStatus(STATUS_FIND_Failed_UnableToProcess);
-                return DcmQRIndexDatabaseError;
-            }
-        }
-
-        /*** Append the Query level
-        **/
-
-        switch (handle_->queryLevel) {
-        case PATIENT_LEVEL :
-            queryLevelString = PATIENT_LEVEL_STRING ;
-            break ;
-        case STUDY_LEVEL :
-            queryLevelString = STUDY_LEVEL_STRING ;
-            break ;
-        case SERIE_LEVEL :
-            queryLevelString = SERIE_LEVEL_STRING ;
-            break ;
-        case IMAGE_LEVEL :
-            queryLevelString = IMAGE_LEVEL_STRING ;
-            break ;
-        }
-        DU_putStringDOElement(*findResponseIdentifiers,
-                              DCM_QueryRetrieveLevel, queryLevelString);
-#ifdef DEBUG
-        DCMQRDB_DEBUG("DB: findResponseIdentifiers:" << OFendl
-            << DcmObject::PrintHelper(**findResponseIdentifiers));
-#endif
-    }
-    else {
-
-        DB_unlock();
-
-        return (DcmQRIndexDatabaseError) ;
-    }
-
-    switch (handle_->rootLevel) {
-    case PATIENT_ROOT : qLevel = PATIENT_LEVEL ;        break ;
-    case STUDY_ROOT :   qLevel = STUDY_LEVEL ;          break ;
-    case PATIENT_STUDY: qLevel = PATIENT_LEVEL ;        break ;
-    }
-
-    /***** Free the last response...
-    ****/
-
-    DB_FreeElementList (handle_->findResponseList) ;
-    handle_->findResponseList = NULL ;
-
-    /***** ... and find the next one
-    ****/
-
-    MatchFound = OFFalse ;
-    cond = EC_Normal ;
-
-    while (1) {
-
-        /*** Exit loop if read error (or end of file)
-        **/
-
-        if (DB_IdxGetNext (&(handle_->idxCounter), &idxRec) != EC_Normal)
-            break ;
-
-        /*** If Response already found
-        **/
-
-        if (DB_UIDAlreadyFound (handle_, &idxRec))
-            continue ;
-
-        /*** Exit loop if error or matching OK
-        **/
-
-        cond = hierarchicalCompare (handle_, &idxRec, qLevel, qLevel, &MatchFound) ;
-        if (cond != EC_Normal)
-            break ;
-        if (MatchFound)
-            break ;
-
-    }
-
-    /**** If an error occured in Matching function
-    ****    return status is pending
-    ***/
-
-    if (cond != EC_Normal) {
-        handle_->idxCounter = -1 ;
-        DB_FreeElementList (handle_->findRequestList) ;
-        handle_->findRequestList = NULL ;
-#ifdef DEBUG
-        DCMQRDB_DEBUG("DB_nextFindResponse () : STATUS_FIND_Failed_UnableToProcess");
-#endif
-        status->setStatus(STATUS_FIND_Failed_UnableToProcess);
-
-        DB_unlock();
-
-        return (cond) ;
-    }
-
-    /**** If a matching image has been found
-    ****    add index records UIDs in found UID list
-    ****    prepare Response List in handle
-    ***/
-
-    if (MatchFound) {
-        DB_UIDAddFound (handle_, &idxRec) ;
-        makeResponseList (handle_, &idxRec) ;
-#ifdef DEBUG
-        DCMQRDB_DEBUG("DB_nextFindResponse () : STATUS_Pending");
-#endif
-        status->setStatus(STATUS_Pending);
-        return (EC_Normal) ;
-    }
-
-    /**** else no matching image has been found,
-    ****    free query identifiers list
-    **** Response list is null, so next call will return STATUS_Success
-    ***/
-
-    else {
-        handle_->idxCounter = -1 ;
-        DB_FreeElementList (handle_->findRequestList) ;
-        handle_->findRequestList = NULL ;
-        DB_FreeUidList (handle_->uidList) ;
-        handle_->uidList = NULL ;
-    }
-
-#ifdef DEBUG
-    DCMQRDB_DEBUG("DB_nextFindResponse () : STATUS_Pending");
-#endif
-    status->setStatus(STATUS_Pending);
-    return (EC_Normal) ;
-
-#endif
 }
 
 /********************
@@ -2026,6 +1875,20 @@ OFCondition PopulateIdxRecFromImageFile(
                                  , DcmFileFormat& dcmff
                                  , DcmQueryRetrieveDatabaseStatus *status)
 {
+
+    bzero((char*)&idxRec, sizeof(idxRec));
+    DB_IdxInitRecord(&idxRec, 0) ;
+    strncpy(idxRec.filename, imageFileName, DBC_MAXSTRING);
+
+    struct stat      stat_buf ;
+
+    stat(imageFileName, &stat_buf) ;
+    idxRec.ImageSize = (int)(stat_buf.st_size) ;
+
+    /* we only have second accuracy */
+    //TODO: maybe this should read from stat info
+    idxRec.RecordedDate =  (double) time(NULL);
+
     if (dcmff.loadFile(imageFileName).bad())
     {
       char buf[256];
@@ -2150,6 +2013,62 @@ void PrintIdxRecord(IdxRecord &idxRec)
   DCMQRDB_DEBUG("-- END Parameters to Register in DB");
 }
 
+OFCondition DbSpRegisterDcmInstance(
+                                    IDbSystem *piDbSystem
+                                  , IDbDatabase *piDbDatabase
+                                  , const IdxRecord &idxRec
+                                  )
+{
+    BOOL bRes = FALSE;
+
+    //TODO: maybe should use Table Value Parameter (TVP) in MS SQL2008
+    //but info to to scarce to find out how to actully use it
+    //http://msdn.microsoft.com/en-us/library/bb510489.aspx
+
+    CAutoPtr<IDbCommand> pCmd(piDbSystem->CreateCommand(piDbDatabase));
+    bRes = pCmd->Create(_T(
+        "EXEC [dcmqrdb_mssql].[dbo].[spRegisterDcmInstance]"
+        "  @studyUiid = ?"
+        ", @seriesUiid = ?"
+        ", @instanceUiid = ?"
+        ", @fileName = ?"
+        ";"
+        ));
+    bRes = pCmd->SetParam(0, CA2T(idxRec.StudyInstanceUID));
+    bRes = pCmd->SetParam(1, CA2T(idxRec.SeriesInstanceUID));
+    bRes = pCmd->SetParam(2, CA2T(idxRec.SOPInstanceUID));
+    bRes = pCmd->SetParam(3, CA2T(idxRec.filename));
+    CAutoPtr<IDbRecordset> pRec(piDbSystem->CreateRecordset(piDbDatabase));
+    bRes = pCmd->Execute(pRec);
+
+    //TODO: this seems screwed up, a remote call to sql server for
+    //every tag!!??, but as noted above is is not clear how to TVP
+    //and hard coding every tag in stored proc seems even more stupid
+    //TODO: at least make it work against an instance key (get from above)
+    //to avoid another lookup in the database
+    for(int i = 0; i < NBPARAMETERS; i++){
+        //TODO: check turn code
+        bRes = pCmd->Create(_T(
+            "EXEC [dcmqrdb_mssql].[dbo].[spRegisterDcmTag]"
+            "  @studyUiid = ?"
+            ", @instanceUiid = ?"
+            ", @AttributeTag =  ?"
+            ", @attributeValue = ?"
+            ));
+        bRes = pCmd->SetParam(0, CA2T((idxRec).StudyInstanceUID));
+        bRes = pCmd->SetParam(1, CA2T((idxRec).SOPInstanceUID));
+        long tagGroupElement = GetTagGroupElement(idxRec.param[i].XTag);
+        bRes = pCmd->SetParam(2, &tagGroupElement);
+        bRes = pCmd->SetParam(3, CA2T(idxRec.param[i].PValueField));
+        bRes = pCmd->Execute(pRec);
+    }
+
+    //TODO: check return status
+    //TODO: have the stored procedure return the path for previously
+    //registered file (if any) and remove that file
+
+    return EC_Normal;
+}
 /*************************
 **  Add data from imageFileName to database
  */
@@ -2162,14 +2081,12 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::storeRequest (
     OFBool      isNew)
 {
     IdxRecord idxRec ;
-    bzero((char*)&idxRec, sizeof(idxRec));
-    DB_IdxInitRecord(&idxRec, 0) ;
+    //StudyDescRecord  *pStudyDesc ;
 
-    strncpy(idxRec.filename, imageFileName, DBC_MAXSTRING);
 #ifdef DEBUG
     DCMQRDB_DEBUG("DB_storeRequest () : storage request of file : " << idxRec.filename);
 #endif
-    strncpy (idxRec.SOPClassUID, SOPClassUID, UI_MAX_LENGTH);
+    strncpy(idxRec.SOPClassUID, SOPClassUID, UI_MAX_LENGTH);
 
     DcmFileFormat dcmff;
     PopulateIdxRecFromImageFile(imageFileName, idxRec, dcmff, status);
@@ -2187,80 +2104,26 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::storeRequest (
     PrintIdxRecord(idxRec);
 #endif
 
-    {
-      BOOL bRes = FALSE;
-
-      //TODO: maybe should use Table Value Parameter (TVP) in MS SQL2008 
-      //but info to to scarce to find out how to actully use it
-      //http://msdn.microsoft.com/en-us/library/bb510489.aspx
-
-      CAutoPtr<IDbCommand> pCmd(piDbSystem_->CreateCommand(piDbDatabase_));
-      bRes = pCmd->Create(_T(
-          "EXEC [dcmqrdb_mssql].[dbo].[spRegisterDcmInstance]"
-          "  @studyUiid = ?"
-          ", @seriesUiid = ?"
-          ", @instanceUiid = ?"
-          ", @fileName = ?"
-          ";"
-          ));
-      bRes = pCmd->SetParam(0, CA2T(idxRec.StudyInstanceUID));
-      bRes = pCmd->SetParam(1, CA2T(idxRec.SeriesInstanceUID));
-      bRes = pCmd->SetParam(2, CA2T(idxRec.SOPInstanceUID));
-      bRes = pCmd->SetParam(3, CA2T(idxRec.filename));
-      CAutoPtr<IDbRecordset> pRec(piDbSystem_->CreateRecordset(piDbDatabase_));
-      bRes = pCmd->Execute(pRec);
-
-      //TODO: this seems screwed up, a remote call to sql server for 
-      //every tag!!??, but as noted above is is not clear how to TVP 
-      //and hard coding every tag in stored proc seems even more stupid
-      //TODO: at least make it work against an instance key (get from above)
-      //to avoid another lookup in the database
-      for(int i = 0; i < NBPARAMETERS; i++){
-          //TODO: check turn code
-          bRes = pCmd->Create(_T(
-              "EXEC [dcmqrdb_mssql].[dbo].[spRegisterDcmTag]"
-              "  @studyUiid = ?"
-              ", @instanceUiid = ?"
-              ", @AttributeTag =  ?"
-              ", @attributeValue = ?"
-              ));
-          bRes = pCmd->SetParam(0, CA2T((idxRec).StudyInstanceUID));
-          bRes = pCmd->SetParam(1, CA2T((idxRec).SOPInstanceUID));
-          long tagGroupElement = GetTagGroupElement(idxRec.param[i].XTag);
-          bRes = pCmd->SetParam(2, &tagGroupElement);
-          bRes = pCmd->SetParam(3, CA2T(idxRec.param[i].PValueField));
-          bRes = pCmd->Execute(pRec);
-      }
-
-      //TODO: check return status
-      //TODO: have the stored procedure return the path for previously
-      //registered file (if any) and remove that file
-    }
+    //TODO: update study information
+    //bzero((char *)pStudyDesc, SIZEOF_STUDYDESC);
+    //DB_GetStudyDesc(pStudyDesc) ;
+    
+    DbSpRegisterDcmInstance(piDbSystem_, piDbDatabase_, idxRec);
 
     return EC_Normal;
 
 #if 0
-    DB_lock(OFTrue);
-
-    bzero((char *)pStudyDesc, SIZEOF_STUDYDESC);
-    DB_GetStudyDesc(pStudyDesc) ;
-
-    stat(imageFileName, &stat_buf) ;
-    idxRec. ImageSize = (int)(stat_buf. st_size) ;
-
-    /* we only have second accuracy */
-    idxRec. RecordedDate =  (double) time(NULL);
-
     /*
      * If the image is already stored remove it from the database.
      * hewett - Nov. 1, 93
      */
-
+    //TODO: resolve/update next function
     removeDuplicateImage(idxRec.SOPInstanceUID,
                 idxRec.StudyInstanceUID, pStudyDesc,
                 imageFileName);
 
 
+    //TODO: resolve/update next function
     if ( checkupinStudyDesc(pStudyDesc, idxRec. StudyInstanceUID, idxRec. ImageSize) != EC_Normal ) {
         free (pStudyDesc) ;
         status->setStatus(STATUS_STORE_Refused_OutOfResources);
@@ -2269,22 +2132,6 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::storeRequest (
 
         return (DcmQRIndexDatabaseError) ;
     }
-
-    free (pStudyDesc) ;
-
-    if (DB_IdxAdd (handle_, &i, &idxRec) == EC_Normal)
-    {
-        status->setStatus(STATUS_Success);
-        DB_unlock();
-        return (EC_Normal) ;
-    }
-    else
-    {
-        status->setStatus(STATUS_STORE_Refused_OutOfResources);
-        DB_unlock();
-    }
-    return DcmQRIndexDatabaseError;
-
 #endif
 }
 
@@ -2482,7 +2329,7 @@ DcmQueryRetrieveSQLDatabaseHandle::DcmQueryRetrieveSQLDatabaseHandle(
     }
 	
     //TODO: clean up the strcpy
-    strcpy(storageArea_, storageArea);
+    storageArea_ = storageArea;
 
     BOOL bRet = FALSE;
     bRet = OpenDbSystem(0, DB_SYSTEM_OLEDB, &piDbSystem_);
@@ -2549,7 +2396,7 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::makeNewStoreFileName(
   // unsigned int seed = fnamecreator.hashString(SOPInstanceUID);
   unsigned int seed = (unsigned int)time(NULL);
   newImageFileName[0]=0; // return empty string in case of error
-  if (! fnamecreator.makeFilename(seed, this->storageArea_, prefix, ".dcm", filename)){
+  if (! fnamecreator.makeFilename(seed, storageArea_.c_str(), prefix, ".dcm", filename)){
     return DcmQRSqlDatabaseError;
   }
 
@@ -2558,33 +2405,6 @@ OFCondition DcmQueryRetrieveSQLDatabaseHandle::makeNewStoreFileName(
 
 }
 
-
-#if 0
-OFCondition DcmQueryRetrieveSQLDatabaseHandle::instanceReviewed(int idx)
-{
-    // acquire shared lock and read record at index position
-    OFCondition result = DB_lock(OFFalse);
-    if (result.bad()) return result;
-    IdxRecord record;
-    result = DB_IdxRead(idx, &record);
-    DB_unlock();
-
-    if (result.good() && (record.hstat != DVIF_objectIsNotNew))
-    {
-      // acquire exclusive lock and update flag
-      result = DB_lock(OFTrue);
-      if (result.bad()) return result;
-
-      record.hstat = DVIF_objectIsNotNew;
-      DB_lseek(handle_->pidx, OFstatic_cast(long, SIZEOF_STUDYDESC + idx * SIZEOF_IDXRECORD), SEEK_SET);
-      write(handle_->pidx, OFreinterpret_cast(char *, &record), SIZEOF_IDXRECORD);
-      DB_lseek(handle_->pidx, 0L, SEEK_SET);
-      DB_unlock();
-    }
-
-    return result;
-}
-#endif
 
 DcmQueryRetrieveSQLDatabaseHandleFactory::DcmQueryRetrieveSQLDatabaseHandleFactory(const DcmQueryRetrieveConfig *config)
 : DcmQueryRetrieveDatabaseHandleFactory()

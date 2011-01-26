@@ -43,3 +43,54 @@ EXEC	@return_value = [dbo].[spFindDcmInstance]
 		@valueList = N'F,20000216'
 
 SELECT	'Return Value' = @return_value
+
+
+SELECT aa.AttributeKey , 
+       aa.InstanceKey  , 
+       aa.AttributeTag , 
+       aa.Value        , 
+       bb.AttributeKey , 
+       bb.InstanceKey  , 
+       bb.AttributeTag , 
+       bb.Value        , 
+       sd.AttributeKey, 
+       sd.InstanceKey, 
+       sd.AttributeTag, 
+       sd.Value 
+FROM   (SELECT AttributeKey, 
+               InstanceKey, 
+               AttributeTag, 
+               Value 
+        FROM   tbAttribute 
+        WHERE  ( AttributeTag = 528432 )) AS aa 
+        INNER JOIN 
+		(SELECT AttributeKey, 
+              InstanceKey, 
+              AttributeTag, 
+              Value 
+		FROM   tbAttribute
+		WHERE  ( AttributeTag = 528446 )) AS bb 
+		ON aa.InstanceKey = bb.InstanceKey
+		INNER JOIN (SELECT AttributeKey, 
+               InstanceKey, 
+               AttributeTag, 
+               Value 
+        FROM   tbAttribute 
+        WHERE  ( AttributeTag = 2097165 )) AS sd
+        ON bb.InstanceKey = sd.InstanceKey 
+GO        
+        
+        
+USE [dcmqrdb_mssql]
+GO
+
+DECLARE	@return_value int
+
+EXEC	@return_value = [dbo].[spTabulateAttributes]
+		@attributeTag1 = 528432,
+		@attributeTag2 = 528446,
+		@attributeTag3 = 2097165
+
+SELECT	'Return Value' = @return_value
+
+GO

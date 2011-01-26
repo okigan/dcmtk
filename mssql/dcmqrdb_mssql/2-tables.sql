@@ -54,7 +54,7 @@ CREATE TABLE [dbo].[tbAttribute](
 	[InstanceKey] [int] NOT NULL,
 	[AttributeTag] [int] NOT NULL,
 	[Value] [nvarchar](1024) NOT NULL,
- CONSTRAINT [PK_tbAttribute] PRIMARY KEY CLUSTERED 
+ CONSTRAINT [PK_tbAttribute] PRIMARY KEY NONCLUSTERED 
 (
 	[AttributeKey] ASC
 )WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
@@ -64,7 +64,7 @@ GO
 
 
 USE [dcmqrdb_mssql]
-CREATE UNIQUE NONCLUSTERED INDEX [IX_tbAttribute] ON [dbo].[tbAttribute] 
+CREATE UNIQUE CLUSTERED INDEX [IX_tbAttribute] ON [dbo].[tbAttribute] 
 (
 	[InstanceKey] ASC,
 	[AttributeTag] ASC

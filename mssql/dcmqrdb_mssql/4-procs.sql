@@ -25,6 +25,10 @@ IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[spReg
 DROP PROCEDURE [dbo].[spRegisterDcmTag]
 GO
 
+IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[spTabulateAttributes]') AND type in (N'P', N'PC'))
+DROP PROCEDURE [dbo].[spTabulateAttributes]
+GO
+
 IF  EXISTS (SELECT * FROM sys.objects WHERE object_id = OBJECT_ID(N'[dbo].[TVPTest]') AND type in (N'P', N'PC'))
 DROP PROCEDURE [dbo].[TVPTest]
 GO
@@ -273,6 +277,65 @@ BEGIN
 END
 
 
+
+GO
+
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+-- =============================================
+-- Author:		Igor Okulist
+-- Create date: 
+-- Description:	
+-- =============================================
+CREATE PROCEDURE [dbo].[spTabulateAttributes] 
+	-- Add the parameters for the stored procedure here
+	@attributeTag1 int, --528432
+	@attributeTag2 int, --528446
+	@attributeTag3 int  --2097165
+AS
+BEGIN
+	-- SET NOCOUNT ON added to prevent extra result sets from
+	-- interfering with SELECT statements.
+	SET NOCOUNT ON;
+
+	SELECT aa.AttributeKey , 
+		   aa.InstanceKey  , 
+		   aa.AttributeTag , 
+		   aa.Value        , 
+		   bb.AttributeKey , 
+		   bb.InstanceKey  , 
+		   bb.AttributeTag , 
+		   bb.Value        , 
+		   sd.AttributeKey, 
+		   sd.InstanceKey, 
+		   sd.AttributeTag, 
+		   sd.Value 
+	FROM   (SELECT AttributeKey, 
+				   InstanceKey, 
+				   AttributeTag, 
+				   Value 
+			FROM   tbAttribute 
+			WHERE  ( AttributeTag = @attributeTag1 )) AS aa 
+			INNER JOIN 
+			(SELECT AttributeKey, 
+				  InstanceKey, 
+				  AttributeTag, 
+				  Value 
+			FROM   tbAttribute
+			WHERE  ( AttributeTag = @attributeTag2 )) AS bb 
+			ON aa.InstanceKey = bb.InstanceKey
+			INNER JOIN (SELECT AttributeKey, 
+				   InstanceKey, 
+				   AttributeTag, 
+				   Value 
+			FROM   tbAttribute 
+			WHERE  ( AttributeTag = @attributeTag3 )) AS sd
+			ON bb.InstanceKey = sd.InstanceKey 
+END
 
 GO
 

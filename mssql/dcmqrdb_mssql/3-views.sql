@@ -28,7 +28,7 @@ GO
 
 CREATE VIEW [dbo].[vwAttributes]
 AS
-SELECT     AttributeKey, InstanceKey, DcmGroup, DcmElement, Value
+SELECT     AttributeKey, InstanceKey, AttributeTag, Value
 FROM         dbo.tbAttribute
 
 GO
@@ -57,7 +57,7 @@ GO
 CREATE VIEW [dbo].[vwStudySeriesInstanceFileAttribute]
 AS
 SELECT     dbo.tbStudy.StudyKey, dbo.tbSeries.SeriesKey, dbo.tbInstance.InstanceKey, dbo.tbFile.FileKey, dbo.tbAttribute.AttributeKey, dbo.tbStudy.StudyUiid, 
-                      dbo.tbSeries.SeriesUiid, dbo.tbInstance.InstanceUiid, dbo.tbFile.FilePath, dbo.tbAttribute.DcmGroup, dbo.tbAttribute.DcmElement, dbo.tbAttribute.Value
+                      dbo.tbSeries.SeriesUiid, dbo.tbInstance.InstanceUiid, dbo.tbFile.FilePath, dbo.tbAttribute.AttributeTag, dbo.tbAttribute.Value
 FROM         dbo.tbFile INNER JOIN
                       dbo.tbInstance ON dbo.tbFile.FileKey = dbo.tbInstance.FileKey INNER JOIN
                       dbo.tbAttribute ON dbo.tbInstance.InstanceKey = dbo.tbAttribute.InstanceKey INNER JOIN
@@ -74,7 +74,7 @@ GO
 
 CREATE VIEW [dbo].[vwStudySeriesIntance]
 AS
-SELECT     dbo.tbStudy.StudyKey, dbo.tbSeries.SeriesKey, dbo.tbInstance.InstanceKey, dbo.tbStudy.StudyUiid, dbo.tbInstance.InstanceUiid, dbo.tbSeries.SeriesUiid
+SELECT     dbo.tbStudy.StudyKey, dbo.tbSeries.SeriesKey, dbo.tbInstance.InstanceKey, dbo.tbStudy.StudyUiid, dbo.tbSeries.SeriesUiid, dbo.tbInstance.InstanceUiid
 FROM         dbo.tbStudy FULL OUTER JOIN
                       dbo.tbSeries ON dbo.tbStudy.StudyKey = dbo.tbSeries.StudyKey FULL OUTER JOIN
                       dbo.tbInstance ON dbo.tbSeries.SeriesKey = dbo.tbInstance.SeriesKey

@@ -6,9 +6,21 @@ $query = CGI->new;
 
 
 my $input = $query->param('file');
+my $width = $query->param('width');
+my $quality = $query->param('quality');
 my $output;
 
-open($output, "E:\\GitViews\\dcmtk\\dcmwadish\\dcm2pnm.exe +on +Wh 5 " . $input . " | ");
+my $command = "E:\\GitViews\\dcmtk\\dcmwadish\\dcmj2pnm.exe +oj +Wh 5 ";
+
+if($width){
+	$command = $command . " +Sxv " . $width;
+}
+
+if($quality){
+	$command = $command . " +Jq " . $quality;
+}
+
+open($output, $command . " " . $input . " | ");
 
 use constant BUFFER_SIZE => 4096;
 

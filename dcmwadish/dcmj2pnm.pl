@@ -1,38 +1,50 @@
 #!/usr/bin/perl
 
 use CGI;
+#use File::Basename;
+#, -attachment=>basename($input));
 
 $query = CGI->new;
 
 
 my $input = $query->param('file');
-my $width = $query->param('width');
-my $quality = $query->param('quality');
-my $output;
 
-my $command = "E:\\GitViews\\dcmtk\\dcmwadish\\dcmj2pnm.exe +oj +Wh 5 ";
+if(length($input) <= 0){
+  print "Content-type: text/html \n";
+  print "\n";
 
-if($width){
-	$command = $command . " +Sxv " . $width;
-}
+  ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst)=localtime(time);
+  printf "%4d-%02d-%02d %02d:%02d:%02d\n",$year+1900,$mon+1,$mday,$hour,$min,$sec;
+}else{
+  my $width = $query->param('width');
+  my $quality = $query->param('quality');
+  my $output;
 
-if($quality){
-	$command = $command . " +Jq " . $quality;
-}
+  my $command = "E:\\GitViews\\dcmtk\\dcmwadish\\dcmj2pnm.exe +oj +Wh 5 ";
 
-open($output, $command . " " . $input . " | ");
+  if($width){
+    $command = $command . " +Sxv " . $width;
+  }
 
-use constant BUFFER_SIZE => 4096;
+  if($quality){
+    $command = $command . " +Jq " . $quality;
+  }
 
-my $buffer = "";
+  open($output, $command . " " . $input . " | ");
 
-print "Content-type: image/png \n";
-print "Cache-Control: private, max-age=3600\n";
-print "\n";
-binmode STDOUT;
+  use constant BUFFER_SIZE => 4096;
 
-while ($output, read( $output, $buffer, 4096) ) {
-    print $buffer;
+  my $buffer = "";
+  
+  #print "Content-type: image/jpeg \n";
+  #print "Cache-Control: public, max-age=3600\n";
+  print $query->header(-type=>'image/jpeg', -expires=>'+3d');
+  #print "\n";
+  binmode STDOUT;
+
+  while ($output, read( $output, $buffer, 4096) ) {
+      print $buffer;
+  }
 }
 
 <>; #pause
